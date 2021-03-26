@@ -16,6 +16,7 @@ as $$
     end;
         $$language plpgsql;
 
+SELECT search_mutual_funds('bonds'::varchar(30), 'stocks'::varchar(30));
 --QUESTION 3
 
 CREATE OR REPLACE PROCEDURE deposit_for_investment(loginname varchar(10), amount integer)
@@ -96,7 +97,6 @@ AS
     $$language plpgsql;
 
 
-
 CALL deposit_for_investment('mike', 1000);
 
 --Question 4
@@ -161,8 +161,8 @@ as $$
         balance from customer where CUSTOMER.login = minimum.login;
         shares_to_buy = floor(shares_to_buy / minimum.shares);
 
-        call buy_shares(minimum.login, minimum.symbol, shares_to_buy);
-        return new;
+        Return buy_shares(minimum.login, minimum.symbol, shares_to_buy);
+
     end;
 
 $$ LANGUAGE plpgsql;
@@ -219,5 +219,5 @@ CREATE TRIGGER buy_on_price
     FOR EACH ROW
     EXECUTE PROCEDURE buy_on_price(symbol, price);
 
-INSERT INTO closing_price values ('MM', 2.00, TO_DATE('2020-05-03', 'YYYY-MM-DD'));
+INSERT INTO closing_price values ('MM', 2.00, TO_DATE('2020-05-04', 'YYYY-MM-DD'));
 
