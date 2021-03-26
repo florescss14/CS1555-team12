@@ -84,9 +84,7 @@ CREATE TABLE ADMINISTRATOR(
     address varchar(30),
     password varchar(10),
     CONSTRAINT ADMINISTRATOR_PK
-        PRIMARY KEY (login),
-    CONSTRAINT ADMINISTRATOR_CHECK
-        CHECK(login NOT IN(SELECT login from CUSTOMER))
+        PRIMARY KEY (login)
 );
 
 CREATE TABLE TRXLOG(
@@ -95,8 +93,8 @@ CREATE TABLE TRXLOG(
     symbol varchar(20),
     t_date date NOT NULL,
     action varchar(10),
-    num_shares int NOT NULL,
-    price decimal(10, 2) NOT NULL,
+    num_shares int,
+    price decimal(10, 2),
     amount decimal(10, 2) NOT NULL,
     CONSTRAINT TRXLOG_PK
         PRIMARY KEY (trx_id),
