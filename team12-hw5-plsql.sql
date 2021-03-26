@@ -95,6 +95,8 @@ AS
 
     $$language plpgsql;
 
+CALL deposit_for_investment('mike', 1000);
+               
 --Question 4
 CREATE OR REPLACE FUNCTION buy_shares(user_login varchar(10),
                                       fund_symbol varchar(20),
@@ -203,8 +205,8 @@ AS
         balance FROM customer WHERE customer.login = buyer_login;
         shares_to_buy = FLOOR(shares_to_buy / new.price);
 
-        CALL buy_shares(buyer_login, new.symbol, shares_to_buy::integer );
-        RETURN new;
+        PERFORM buy_shares(buyer_login, new.symbol, shares_to_buy::integer );
+    RETURN new;
     end;
     $$ LANGUAGE plpgsql;
 
@@ -214,3 +216,5 @@ CREATE TRIGGER buy_on_price
     AFTER INSERT ON closing_price
     FOR EACH ROW
     EXECUTE PROCEDURE buy_on_price(symbol, price);
+
+INSERT INTO closing_price values ('MM', 2.00, TO_DATE('2020-05-03', 'YYYY-MM-DD'));
