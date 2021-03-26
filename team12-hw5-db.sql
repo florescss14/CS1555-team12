@@ -8,6 +8,9 @@ DROP TABLE IF EXISTS ADMINISTRATOR cascade;
 DROP TABLE IF EXISTS TRXLOG cascade;
 DROP TABLE IF EXISTS MUTUAL_DATE cascade;
 
+
+--Added not null to name and category because it is necessary for the mutual fund.
+--We have a check on category to make sure that the category is one of the ones that exist
 CREATE TABLE MUTUALFUND(
     symbol varchar(20),
     name varchar(30) NOT NULL,
@@ -20,6 +23,7 @@ CREATE TABLE MUTUALFUND(
         CHECK ( category in ('fixed', 'bonds', 'stocks', 'mixed') )
 );
 
+--Added not null to the price because this table should have a closing price.
 CREATE TABLE CLOSING_PRICE(
     symbol varchar(20),
     price decimal(10, 2) NOT NULL,
@@ -30,6 +34,9 @@ CREATE TABLE CLOSING_PRICE(
         FOREIGN KEY (symbol) REFERENCES MUTUALFUND (symbol)
 );
 
+-- The customer should not be allowed to trade if they do no include
+-- their basic information so we made everything not null and made the
+--defualt balance 0 because it should not be null but also should start at 0.
 CREATE TABLE CUSTOMER(
     login varchar(10),
     name varchar(20) NOT NULL,
@@ -41,6 +48,8 @@ CREATE TABLE CUSTOMER(
         PRIMARY KEY (login)
 );
 
+
+-- Added not null to the date because the date for allocation should always be included
 CREATE TABLE ALLOCATION(
     allocation_no int,
     login varchar(10),
@@ -51,6 +60,8 @@ CREATE TABLE ALLOCATION(
         FOREIGN KEY (login) REFERENCES CUSTOMER (login)
 );
 
+-- Included a check constraint on percentage to ensure that the user uses a percentage between 0 and 1
+-- Would be invalid to go over 100%
 CREATE TABLE PREFERS(
     allocation_no int,
     symbol varchar(20),
@@ -65,6 +76,7 @@ CREATE TABLE PREFERS(
         CHECK(percentage <= 1.00 and percentage > 0.00)
 );
 
+--shares should be not null because we need to know how many shares a customer owns.
 CREATE TABLE OWNS(
     login varchar(10),
     symbol varchar(20),
@@ -77,16 +89,21 @@ CREATE TABLE OWNS(
         FOREIGN KEY (symbol) REFERENCES MUTUALFUND (symbol)
 );
 
+--Included not nulls because we want the administrators to include all of their basic information
 CREATE TABLE ADMINISTRATOR(
     login varchar(10),
-    name varchar(20),
-    email varchar(30),
-    address varchar(30),
-    password varchar(10),
+    name varchar(20) NOT NULL,
+    email varchar(30) NOT NULL,
+    address varchar(30) NOT NULL,
+    password varchar(10) NOT NULL,
     CONSTRAINT ADMINISTRATOR_PK
         PRIMARY KEY (login)
 );
 
+
+--Included not null for date and amount because we need to know when
+-- and how much is being transfered. Have a check on action to make sure
+-- that the action is one of the valid ones
 CREATE TABLE TRXLOG(
     trx_id serial,
     login varchar(10),
@@ -251,3 +268,13 @@ as $$
         return ('[' || final || ']');
     end;
         $$language plpgsql;
+
+
+CREATE TRIGGER buy_on_date
+    AFTER UPDATE
+    ON MUTUAL_DATE
+    FOR EACH ROW
+    WHEN(
+        
+        )
+    --EXECUTE FUNCTION buy_shares();
