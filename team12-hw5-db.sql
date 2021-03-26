@@ -268,36 +268,3 @@ as $$
         return ('[' || final || ']');
     end;
         $$language plpgsql;
-
-DROP TRIGGER IF EXISTS buy_on_date ON MUTUAL_DATE CASCADE;
-CREATE TRIGGER buy_on_date
-    AFTER UPDATE
-    ON MUTUAL_DATE
-    FOR EACH ROW
-    EXECUTE PROCEDURE buying_on_date();
-
-
-
-CREATE OR REPLACE PROCEDURE buying_on_date()
-LANGUAGE plpgsql
-as $$
-    declare
-
-    begin
-        select a.login as login, symbol, a.shares as shares
-        from
-        (select login, min(shares) as shares
-        from OWNS
-        GROUP BY login) as a LEFT JOIN
-        (select *
-        from OWNS) as b
-        on a.login = b.login and a.shares = b.shares;
-
-
-        call buy_shares()
-
-
-
-    end;
-
-$$
