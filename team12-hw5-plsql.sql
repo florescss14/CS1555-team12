@@ -163,12 +163,9 @@ AS
     end;
     $$ LANGUAGE plpgsql;
 
-INSERT INTO owns values ('mike', 'MM', 20);
 
 DROP TRIGGER IF EXISTS buy_on_price ON closing_price;
 CREATE TRIGGER buy_on_price
     AFTER INSERT ON closing_price
     FOR EACH ROW
     EXECUTE PROCEDURE buy_on_price(symbol, price);
-
-INSERT INTO closing_price values ('MM',2.00,TO_DATE('2020-04-30','YYYY-MM-DD'));
