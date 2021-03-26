@@ -106,8 +106,8 @@ CREATE OR REPLACE FUNCTION buy_shares(user_login varchar(10),
             user_balance decimal(10, 2);
         BEGIN
             SELECT price INTO shares_cost
-            FROM closing_price
-            WHERE symbol = fund_symbol AND closing_price.p_date = mutual_date.p_date - INTERVAL '1 DAY';
+            FROM closing_price JOIN mutual_date md on closing_price.p_date = md.p_date - INTERVAL '1 DAY'
+            WHERE symbol = fund_symbol ;
 
             SELECT balance INTO user_balance
             FROM customer
@@ -158,8 +158,8 @@ AS
         balance FROM customer WHERE customer.login = buyer_login;
         shares_to_buy = FLOOR(shares_to_buy / new.price);
 
-        RETURN buy_shares(buyer_login, new.symbol, shares_to_buy::integer );
-
+        CALL buy_shares(buyer_login, new.symbol, shares_to_buy::integer );
+        RETURN new;
     end;
     $$ LANGUAGE plpgsql;
 
