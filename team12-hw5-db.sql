@@ -238,16 +238,4 @@ insert into trxlog
 (3,'mike','RE',TO_DATE('2020-03-29', 'YYYY-MM-DD'),'buy',50,10.00,500.00),
 (4,'mike','MM',TO_DATE('2020-04-01', 'YYYY-MM-DD'),'sell',50,15.00,750.00);
 
-         
-CREATE OR REPLACE FUNCTION search_mutual_funds(s1 varchar(30) , s2 varchar(30) )
-returns varchar(60)
-as $$
-    declare
-    final varchar(60);
-    begin
-        select string_agg(symbol, ', ') into final
-        from mutualfund
-        where (description like ('%' || s1  || '%' || s2 || '%'));
-        return ('[' || final || ']');
-    end;
-        $$language plpgsql;
+      
