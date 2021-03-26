@@ -1,3 +1,5 @@
+-- Andrew Imredy api5, Ted Balashov thb46, Christopher Flores cwf24
+
 DROP TABLE IF EXISTS MUTUALFUND cascade;
 DROP TABLE IF EXISTS CLOSING_PRICE cascade;
 DROP TABLE IF EXISTS CUSTOMER cascade;
