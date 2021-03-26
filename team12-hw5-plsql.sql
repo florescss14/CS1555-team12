@@ -131,11 +131,11 @@ CREATE OR REPLACE FUNCTION buy_shares(user_login varchar(10),
     $$ LANGUAGE plpgsql;
 
 
-;
+
 --Question 6
 --assume closing prices are not changed retroactively, only that tuples are added at the end of every day
-DROP PROCEDURE IF EXISTS buy_on_price(fund_symbol varchar, fund_price decimal);
-CREATE OR REPLACE FUNCTION buy_on_price(fund_symbol varchar(20), fund_price decimal(10, 2))
+DROP PROCEDURE IF EXISTS buy_on_price();
+CREATE OR REPLACE FUNCTION buy_on_price()
 RETURNS TRIGGER
 AS
     $$
@@ -147,7 +147,7 @@ AS
         select a.login INTO buyer_login
         from
         (select login, min(shares) as shares
-        from OWNS where symbol = fund_symbol
+        from OWNS where symbol = new.symbol
         GROUP BY login) as a LEFT JOIN
         (select *    from OWNS) as b
         on a.login = b.login and a.shares = b.shares;
@@ -156,10 +156,9 @@ AS
         --figure out how many shares
         SELECT INTO shares_to_buy
         balance FROM customer WHERE customer.login = buyer_login;
-        shares_to_buy = FLOOR(shares_to_buy / fund_price);
+        shares_to_buy = FLOOR(shares_to_buy / new.price);
 
-        CALL buy_shares(buyer_login, fund_symbol, shares_to_buy::integer );
-
+        RETURN buy_shares(buyer_login, new.symbol, shares_to_buy::integer );
 
     end;
     $$ LANGUAGE plpgsql;
@@ -172,4 +171,4 @@ CREATE TRIGGER buy_on_price
     FOR EACH ROW
     EXECUTE PROCEDURE buy_on_price(symbol, price);
 
-INSERT INTO closing_price values ('MM',1.00,TO_DATE('2020-04-28','YYYY-MM-DD'));
+INSERT INTO closing_price values ('MM',2.00,TO_DATE('2020-04-30','YYYY-MM-DD'));
