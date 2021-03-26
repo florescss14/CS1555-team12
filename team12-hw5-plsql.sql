@@ -109,6 +109,8 @@ CREATE OR REPLACE FUNCTION buy_shares(user_login varchar(10),
             FROM closing_price JOIN mutual_date md on closing_price.p_date = md.p_date - INTERVAL '1 DAY'
             WHERE symbol = fund_symbol ;
 
+            shares_cost = shares_cost * n_shares;
+
             SELECT balance INTO user_balance
             FROM customer
             WHERE customer.login =  user_login;
@@ -122,15 +124,15 @@ CREATE OR REPLACE FUNCTION buy_shares(user_login varchar(10),
                 WHERE customer.login = user_login;
 
                 INSERT INTO owns values (user_login, fund_symbol, n_shares)
-                ON CONFLICT ON CONSTRAINT owns_pk DO UPDATE
-                SET owns.shares = owns.shares + n_shares;
+                ON CONFLICT ON CONSTRAINT OWNS_PK DO UPDATE
+                SET shares = owns.shares + n_shares;
 
                 RETURN true;
             end if;
         end;
     $$ LANGUAGE plpgsql;
 
-
+SELECT buy_shares('mike', 'MM', 1);
 
 --Question 6
 --assume closing prices are not changed retroactively, only that tuples are added at the end of every day
