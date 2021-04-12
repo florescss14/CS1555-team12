@@ -1,213 +1,342 @@
 -- Andrew Imredy api5, Ted Balashov thb46, Christopher Flores cwf24
 
 
---QUESTION 2
+--Question 2:
+DROP FUNCTION IF EXISTS search_mutual_funds(keyword_1 varchar(30), keyword_2 varchar(30));
+CREATE OR REPLACE FUNCTION search_mutual_funds(keyword_1 varchar(30), keyword_2 varchar(30))
+    RETURNS text AS
+$$
+DECLARE
+    res text; -- local variable for string of symbols
+    i   text; -- current record
+BEGIN
+    res := '';
+    FOR i IN
+        SELECT symbol
+        FROM mutual_fund
+        WHERE description LIKE '%' || keyword_1 || '%'
+          AND description LIKE '%' || keyword_2 || '%'
+        LOOP
+            res := res || ',' || i;
+        END LOOP;
+    res := res || ']';
+    res := ltrim(res, ','); --trim extra ',' at beginning
+    res := '[' || res;
 
-CREATE OR REPLACE FUNCTION search_mutual_funds(s1 varchar(30) , s2 varchar(30) )
-returns varchar(60)
-as $$
-    declare
-    final varchar(60);
-    begin
-        select string_agg(symbol, ', ') into final
-        from mutualfund
-        where ((description like ('%' || s1  || '%' || s2 || '%')) or (description like ('%' || s2  || '%' || s1 || '%')));
-        return ('[' || final || ']');
-    end;
-        $$language plpgsql;
-
---QUESTION 3
-
-CREATE OR REPLACE PROCEDURE deposit_for_investment(loginname varchar(30), amount integer)
-AS
-    $$
-    declare
-    howmany integer;
-    tot integer;
-    currentAmount integer;
-    currentTransactionNum integer;
-    today date;
-    minAmount integer;
-
-    depcursor cursor for
-        (select row_number() OVER () as rnum, symbol as s, floor((amount*(percentage/howmany))/price) as amt, balance as b, price as p
-        from ((((prefers left join allocation on prefers.allocation_no=allocation.allocation_no) x
-            natural join customer)) y natural join
-            (select h.symbol, price
-            from
-            closing_price h inner join (select symbol, max(p_date) as max from closing_price group by symbol) g on h.p_date = g.max and g.symbol = h.symbol) i)
-        where (login = loginname));
-    depositRow record;
-    begin
-
-        tot = amount;
-
-        select count(allocation_no) into howmany
-        from allocation
-        where login = loginname
-        group by login;
-
-        select max(p_date) into today
-        from closing_price;
-
-        select max(trx_id) into currentTransactionNum
-        from trxlog;
-        minAmount = 1;
-        open depcursor;
-        loop
-            fetch depcursor into depositRow;
-            exit when not found;
-            if(depositRow.amt = 0)then
-                raise notice 'just deposit';
-                minAmount = 0;
-            end if;
-        end loop;
-        close depcursor;
-
-        if (minAmount > 0) then
-
-        open depcursor;
-        loop
-            fetch depcursor into depositRow;
-            exit when not found;
-            currentTransactionNum = currentTransactionNum+1;
-            currentAmount = depositRow.amt * depositRow.p;
-            raise notice 'current amt %',depositRow.amt;
-            raise notice 'current price %', depositRow.p;
-            raise notice 'current dep %', currentAmount;
-            insert into trxlog (trx_id,login,symbol,t_date,action,num_shares,price,amount) values
-            (currentTransactionNum, loginname, depositRow.s, today, 'buy', depositRow.amt, depositRow.p, currentAmount);
-
-            tot = tot - depositRow.amt*depositRow.p;
-
-        end loop;
-        close depcursor;
-
-        end if;
-        currentTransactionNum = currentTransactionNum+1;
-        if(tot>0) then
-        insert into trxlog (trx_id,login,symbol,t_date,action,num_shares,price,amount) values
-            (currentTransactionNum, loginname, NULL, today, 'deposit', NULL, NULL, tot);
-        update customer SET balance = balance + tot where login = loginname;
-        end if;
-
-    end;
-
-    $$language plpgsql;
-
---Question 4
-CREATE OR REPLACE FUNCTION buy_shares(user_login varchar(10),
-                                      fund_symbol varchar(20),
-                                      n_shares integer)
-    RETURNS boolean AS
-    $$
-        DECLARE
-            shares_cost decimal(10, 2);
-            user_balance decimal(10, 2);
-        BEGIN
-            SELECT price INTO shares_cost
-            FROM closing_price JOIN mutual_date md on closing_price.p_date = md.p_date - INTERVAL '1 DAY'
-            WHERE symbol = fund_symbol ;
-
-            shares_cost = shares_cost * n_shares;
-
-            SELECT balance INTO user_balance
-            FROM customer
-            WHERE customer.login =  user_login;
-
-            IF user_balance < shares_cost THEN
-                RETURN false;
-            ELSE
-                --reduce balance, increase owns
-                UPDATE customer
-                SET balance = balance - shares_cost
-                WHERE customer.login = user_login;
-
-                INSERT INTO owns values (user_login, fund_symbol, n_shares)
-                ON CONFLICT ON CONSTRAINT OWNS_PK DO UPDATE
-                SET shares = owns.shares + n_shares;
-
-                RETURN true;
-            end if;
-        end;
-    $$ LANGUAGE plpgsql;
-
-SELECT buy_shares('mike', 'MM', 1);
-
--- Question 5
-CREATE OR REPLACE function buying_on_date()
-returns trigger
-as $$
-    declare
-    minimum owns%rowtype;
-    least_owned_fund varchar(20);
-    shares_to_buy decimal(10, 2);
-    buyer_login varchar(10);
-    begin
-        select a.login, symbol, a.shares as shares into minimum
-        from
-        (select login, min(shares) as shares
-        from OWNS
-        GROUP BY login) as a LEFT JOIN
-        (select *
-        from OWNS) as b
-        on a.login = b.login and a.shares = b.shares;
-
-        SELECT into shares_to_buy
-        balance from customer where CUSTOMER.login = minimum.login;
-        shares_to_buy = floor(shares_to_buy / minimum.shares);
-
-        call buy_shares(minimum.login, minimum.symbol, shares_to_buy);
-        return new;
-    end;
-
+    return res;
+END;
 $$ LANGUAGE plpgsql;
+--Sanity Check:
+SELECT symbol
+FROM mutual_fund
+WHERE description LIKE CONCAT('%', 'bonds', '%')
+  AND description LIKE CONCAT('%', 'term', '%');
+--test function: should be like: [STB, LTB]
+SELECT search_mutual_funds('bonds', 'term');
 
-DROP TRIGGER IF EXISTS buy_on_date ON MUTUAL_DATE CASCADE;
-CREATE TRIGGER buy_on_date
-    AFTER UPDATE
-    ON MUTUAL_DATE
-    FOR EACH ROW
-    EXECUTE PROCEDURE buying_on_date();
-
-INSERT INTO MUTUAL_DATE values (TO_DATE('2020-04-06', 'YYYY-MM-DD'));
-
-select buy_shares('mike'::varchar(10), 'RE'::varchar(20), 1);
-
---Question 6
---assume closing prices are not changed retroactively, only that tuples are added at the end of every day
-DROP PROCEDURE IF EXISTS buy_on_price();
-CREATE OR REPLACE FUNCTION buy_on_price()
-RETURNS TRIGGER
+--Question 3:
+CREATE OR REPLACE PROCEDURE deposit_for_investment(login varchar(10), deposit decimal(10, 2))
 AS
-    $$
-    DECLARE
-        least_owned_fund varchar(20);
-        shares_to_buy decimal(10, 2);
-        buyer_login varchar(10);
-    BEGIN
-        select a.login INTO buyer_login
-        from
-        (select login, min(shares) as shares
-        from OWNS where symbol = new.symbol
-        GROUP BY login) as a LEFT JOIN
-        (select *    from OWNS) as b
-        on a.login = b.login and a.shares = b.shares;
+$$
+DECLARE
+    mutual_date_value date;
+    row_count         int;
+    alloc_no          int;
+    pref              record;
+    percentage        decimal(10, 2);
+    symbol_price      decimal(10, 2);
+    amount_to_buy     decimal(10, 2);
+    num_of_shares     int;
+    total_amount      decimal(10, 2);
+    txc_amount        decimal(10, 2);
+    remaining         decimal(10, 2);
+    suffient_amount   boolean;
+BEGIN
+    --  Get the current date
+    SELECT p_date
+    INTO mutual_date_value
+    FROM MUTUAL_DATE
+    ORDER BY p_date DESC
+    LIMIT 1;
 
+    -- Check if user exists
+    SELECT count(*)
+    INTO row_count
+    FROM CUSTOMER
+    WHERE CUSTOMER.login = deposit_for_investment.login; -- The name of the procedure is used as a prefix (i.e., scope)
+    IF row_count = 0 THEN
+        RAISE EXCEPTION 'User % not found.', login;
+    END IF;
 
-        --figure out how many shares
-        SELECT INTO shares_to_buy
-        balance FROM customer WHERE customer.login = buyer_login;
-        shares_to_buy = FLOOR(shares_to_buy / new.price);
+    --  Total amount of all transaction
+    total_amount = 0;
 
-        CALL buy_shares(buyer_login, new.symbol, shares_to_buy::integer );
-        RETURN new;
-    end;
-    $$ LANGUAGE plpgsql;
+    --  Find the newest allocation_no for the user
+    SELECT ALLOCATION.allocation_no
+    INTO alloc_no
+    FROM ALLOCATION
+    WHERE ALLOCATION.login = deposit_for_investment.login
+    ORDER BY ALLOCATION.p_date DESC
+    LIMIT 1;
 
+    -- Check if the deposit is enough to buy all symbols in the allocation
+    SELECT SUM(P.percentage * deposit) > SUM(CP.price)
+    INTO suffient_amount
+    FROM PREFERS P
+             JOIN CLOSING_PRICE CP ON CP.symbol = P.symbol
+             JOIN (SELECT CLOSING_PRICE.symbol, max(p_date) AS max_date
+                   FROM CLOSING_PRICE
+                   GROUP BY CLOSING_PRICE.symbol) AS MOST_RECENT_CP
+                  ON cp.symbol = MOST_RECENT_CP.symbol AND CP.p_date = MOST_RECENT_CP.max_date
+    WHERE allocation_no = alloc_no;
 
-DROP TRIGGER IF EXISTS buy_on_price ON closing_price;
-CREATE TRIGGER buy_on_price
-    AFTER INSERT ON closing_price
+    IF not suffient_amount THEN -- FALSE if deposit is not enough for a symbol
+        RAISE NOTICE 'Partial allocation purchase is not allowed. The amount of % will be deposited to the account.', deposit;
+    ELSE
+        -- Buy the shares
+        FOR pref in (SELECT * FROM PREFERS WHERE allocation_no = alloc_no)
+            LOOP
+                percentage = pref.percentage;
+                amount_to_buy = deposit * percentage;
+
+                -- Find latest mutual fund price associated with the preference symbol
+                SELECT CLOSING_PRICE.price
+                INTO symbol_price
+                FROM CLOSING_PRICE
+                WHERE CLOSING_PRICE.symbol = pref.symbol
+                ORDER BY CLOSING_PRICE.p_date DESC
+                LIMIT 1;
+
+                -- Number of shares that we have to buy for the user for this symbol
+                num_of_shares = FLOOR(amount_to_buy / symbol_price);
+
+                -- transaction total amount
+                txc_amount = num_of_shares * symbol_price;
+                total_amount = total_amount + txc_amount;
+
+                -- The transaction id will be generated automatically the sequence 'trx_sequence'
+                INSERT INTO TRXLOG(login, symbol, action, num_shares, price, amount, t_date)
+                VALUES (deposit_for_investment.login, pref.symbol, 'buy', num_of_shares,
+                        symbol_price, txc_amount, mutual_date_value);
+
+                -- Check if the user already own some shares of this symbol
+                SELECT count(*)
+                INTO row_count
+                FROM OWNS
+                WHERE OWNS.login = deposit_for_investment.login
+                  AND OWNS.symbol = pref.symbol;
+                IF row_count = 0 THEN
+                    -- Create a new row
+                    INSERT INTO OWNS(login, symbol, shares)
+                    VALUES (deposit_for_investment.login, pref.symbol, num_of_shares);
+                ELSE
+                    -- Update the existing row
+                    UPDATE OWNS
+                    SET shares = shares + num_of_shares
+                    WHERE OWNS.login = deposit_for_investment.login
+                      AND OWNS.symbol = pref.symbol;
+                END IF;
+            END LOOP;
+    END IF;
+
+    -- deposit the remaining amount to user's balance
+    remaining = deposit - total_amount;
+    UPDATE CUSTOMER
+    SET balance = balance + remaining
+    WHERE CUSTOMER.login = deposit_for_investment.login;
+END;
+$$ LANGUAGE PLPGSQL;
+
+CALL deposit_for_investment('mary', 5);
+CALL deposit_for_investment('mike', 100);
+
+--Question 4:
+CREATE OR REPLACE FUNCTION buy_shares(login varchar(10), symbol varchar(20), number_of_shares int)
+    RETURNS BOOLEAN AS
+$$
+DECLARE
+    mutual_date_value date;
+    row_count         int;
+    symbol_price      decimal(10, 2);
+    customer_balance  decimal(10, 2);
+BEGIN
+
+    --  Get the current date
+    SELECT p_date
+    INTO mutual_date_value
+    FROM MUTUAL_DATE
+    ORDER BY p_date DESC
+    LIMIT 1;
+
+    -- Check if customer exists
+    SELECT count(*)
+    INTO row_count
+    FROM CUSTOMER
+    WHERE CUSTOMER.login = buy_shares.login; -- The name of the procedure is used as a prefix (i.e., scope)
+    IF row_count = 0 THEN
+        RAISE EXCEPTION 'User % not found.', login;
+    END IF;
+
+    -- Check if the symbol exists
+    SELECT count(*)
+    INTO row_count
+    FROM MUTUAL_FUND
+    WHERE MUTUAL_FUND.symbol = buy_shares.symbol; -- The name of the procedure is used as a prefix (i.e., scope)
+    IF row_count = 0 THEN
+        RAISE EXCEPTION 'Symbol % not found.', symbol;
+    END IF;
+
+    -- get the customer's balance
+    SELECT balance
+    INTO customer_balance
+    FROM CUSTOMER
+    WHERE CUSTOMER.login = buy_shares.login;
+
+    -- Get the latest price for the desired symbol
+    SELECT CLOSING_PRICE.price
+    INTO symbol_price
+    FROM CLOSING_PRICE
+    WHERE CLOSING_PRICE.symbol = buy_shares.symbol
+    ORDER BY CLOSING_PRICE.p_date DESC
+    LIMIT 1;
+
+    -- no sufficient funds to buy the shares
+    IF (symbol_price * number_of_shares) > customer_balance THEN
+        RETURN FALSE;
+    END IF;
+
+    -- buy shares section ==
+
+    -- The transaction id will be generated automatically the sequence 'trx_sequence'
+    INSERT INTO TRXLOG(login, symbol, action, num_shares, price, amount, t_date)
+    VALUES (login, symbol, 'buy', number_of_shares, symbol_price, (symbol_price * number_of_shares),
+            mutual_date_value);
+
+    -- Check if the user already own some shares of this symbol
+    SELECT count(*)
+    INTO row_count
+    FROM OWNS
+    WHERE OWNS.login = buy_shares.login
+      AND OWNS.symbol = buy_shares.symbol;
+
+    -- if no shares are owned of the same symbol
+    IF row_count = 0 THEN
+        -- add an ownership of shares
+        INSERT INTO OWNS(login, symbol, shares)
+        VALUES (buy_shares.login, buy_shares.symbol, buy_shares.number_of_shares);
+    ELSE
+        -- Update the existing row
+        UPDATE OWNS
+        SET shares = shares + buy_shares.number_of_shares
+        WHERE OWNS.login = buy_shares.login
+          AND OWNS.symbol = buy_shares.symbol;
+    END IF;
+    -- end buy shares section ==
+
+    -- update the customer's balance section ==
+    UPDATE CUSTOMER
+    SET balance = balance - (symbol_price * number_of_shares)
+    WHERE CUSTOMER.login = buy_shares.login;
+    -- end update customer's balance section ==
+
+    -- shares are bought
+    RETURN TRUE;
+
+END;
+$$ LANGUAGE PLPGSQL;
+
+SELECT buy_shares('mary', 'MM', 1);
+
+-- Question 5:
+CREATE OR REPLACE FUNCTION buy_on_date_helper()
+    RETURNS trigger AS
+$$
+DECLARE
+    num_of_shares   int;
+    customer_symbol varchar(20);
+    symbol_price    decimal(10, 2);
+    c_customer      record;
+BEGIN
+
+    FOR c_customer in (SELECT * FROM CUSTOMER)
+        LOOP
+            -- Get the symbol with the minimum shares
+            SELECT symbol
+            into customer_symbol
+            FROM OWNS
+            WHERE login = c_customer.login
+            ORDER BY shares
+            LIMIT 1;
+
+            IF customer_symbol IS NOT NULL THEN
+                -- Get the latest price for the desired symbol
+                SELECT CLOSING_PRICE.price
+                INTO symbol_price
+                FROM CLOSING_PRICE
+                WHERE CLOSING_PRICE.symbol = customer_symbol
+                ORDER BY CLOSING_PRICE.p_date DESC
+                LIMIT 1;
+
+                num_of_shares = FLOOR(c_customer.balance / symbol_price);
+
+                RAISE NOTICE 'Did the customer % buy % shares of % symbol? (%).',c_customer.login,  num_of_shares,customer_symbol,
+                    buy_shares(c_customer.login, customer_symbol, num_of_shares);
+            END IF;
+
+        END LOOP;
+    RETURN NULL; -- result is ignored since this is an AFTER trigger
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE TRIGGER buy_on_date
+    AFTER UPDATE OR INSERT
+    ON mutual_date
     FOR EACH ROW
-    EXECUTE PROCEDURE buy_on_price(symbol, price);
+EXECUTE FUNCTION buy_on_date_helper();
+
+-- QUESTION 6:
+CREATE OR REPLACE FUNCTION buy_on_price_helper()
+    RETURNS trigger AS
+$$
+DECLARE
+    num_of_shares   int;
+    customer_symbol varchar(20);
+    symbol_price    decimal(10, 2);
+    c_customer      record;
+BEGIN
+
+    FOR c_customer in (SELECT * FROM CUSTOMER)
+        LOOP
+            -- Get the symbol with the minimum shares
+            SELECT symbol
+            into customer_symbol
+            FROM OWNS
+            WHERE login = c_customer.login AND symbol = NEW.symbol -- This can be optimize
+            ORDER BY shares
+            LIMIT 1;
+
+            IF customer_symbol IS NOT NULL THEN
+                -- Get the latest price for the desired symbol
+                SELECT CLOSING_PRICE.price
+                INTO symbol_price
+                FROM CLOSING_PRICE
+                WHERE CLOSING_PRICE.symbol = customer_symbol
+                ORDER BY CLOSING_PRICE.p_date DESC
+                LIMIT 1;
+
+                num_of_shares = FLOOR(c_customer.balance / symbol_price);
+
+                RAISE NOTICE 'Did the customer % buy % shares of % symbol? (%).',c_customer.login,  num_of_shares,customer_symbol,
+                    buy_shares(c_customer.login, customer_symbol, num_of_shares);
+            END IF;
+
+        END LOOP;
+    RETURN NULL; -- result is ignored since this is an AFTER trigger
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE TRIGGER buy_on_price
+    AFTER UPDATE OF PRICE
+    ON closing_price
+    FOR EACH ROW
+EXECUTE FUNCTION buy_on_price_helper();
