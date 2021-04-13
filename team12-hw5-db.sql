@@ -93,8 +93,8 @@ CREATE TABLE OWNS
     symbol varchar(20),
     shares integer NOT NULL,
     CONSTRAINT OWNS_PK PRIMARY KEY (login, symbol),
-    CONSTRAINT LOGIN_FK FOREIGN KEY (login) REFERENCES CUSTOMER (login),
-    CONSTRAINT SYMBOL_FK FOREIGN KEY (symbol) REFERENCES MUTUAL_FUND (symbol),
+    CONSTRAINT LOGIN_FK FOREIGN KEY (login) REFERENCES CUSTOMER (login) on delete cascade,
+    CONSTRAINT SYMBOL_FK FOREIGN KEY (symbol) REFERENCES MUTUAL_FUND (symbol) on delete cascade,
     CONSTRAINT SHARES_CK CHECK ( shares > 0 )
 );
 
@@ -112,8 +112,8 @@ CREATE TABLE TRXLOG
     price      decimal(10, 2),
     amount     decimal(10, 2) NOT NULL,
     CONSTRAINT TRXLOG_PK PRIMARY KEY (trx_id),
-    CONSTRAINT LOGIN_FK FOREIGN KEY (login) REFERENCES CUSTOMER (login),
-    CONSTRAINT SYMBOL_FK FOREIGN KEY (symbol) REFERENCES MUTUAL_FUND (symbol),
+    CONSTRAINT LOGIN_FK FOREIGN KEY (login) REFERENCES CUSTOMER (login) on delete cascade,
+    CONSTRAINT SYMBOL_FK FOREIGN KEY (symbol) REFERENCES MUTUAL_FUND (symbol) on delete cascade,
     CONSTRAINT AMOUNT_CK CHECK ( amount > 0),
     CONSTRAINT NUM_SHARES_CK CHECK ( num_shares > 0),
     CONSTRAINT PRICE_CK CHECK ( price > 0)
@@ -126,7 +126,7 @@ CREATE TABLE ALLOCATION
     login         varchar(10) NOT NULL,
     p_date        date        NOT NULL, --processing date
     CONSTRAINT ALLOCATION_PK PRIMARY KEY (allocation_no),
-    CONSTRAINT ALLOC_LOGIN_FK FOREIGN KEY (login) REFERENCES CUSTOMER (login)
+    CONSTRAINT ALLOC_LOGIN_FK FOREIGN KEY (login) REFERENCES CUSTOMER (login) on delete cascade
 );
 
 ---CREATING PREFERS TABLE
@@ -136,8 +136,8 @@ CREATE TABLE PREFERS
     symbol        varchar(20) NOT NULL,
     percentage    decimal(3, 2)       NOT NULL,
     CONSTRAINT PREFERS_PK PRIMARY KEY (allocation_no, symbol),
-    CONSTRAINT PREFERS_ALLOCATION_NO_FK FOREIGN KEY (allocation_no) REFERENCES ALLOCATION (allocation_no),
-    CONSTRAINT PREFERS_ALLOCATION_SYMBOL_FK FOREIGN KEY (symbol) REFERENCES MUTUAL_FUND (symbol),
+    CONSTRAINT PREFERS_ALLOCATION_NO_FK FOREIGN KEY (allocation_no) REFERENCES ALLOCATION (allocation_no) on delete cascade,
+    CONSTRAINT PREFERS_ALLOCATION_SYMBOL_FK FOREIGN KEY (symbol) REFERENCES MUTUAL_FUND (symbol) on delete cascade,
     CONSTRAINT PERCENTAGE_CK CHECK ( percentage > 0)
 );
 
@@ -148,6 +148,6 @@ CREATE TABLE CLOSING_PRICE
     price  decimal(10, 2)       NOT NULL,
     p_date date        NOT NULL, --processing date
     CONSTRAINT CLOSING_PRICE_PK PRIMARY KEY (symbol, p_date),
-    CONSTRAINT CLOSING_PRICE_SYMBOL_FK FOREIGN KEY (symbol) REFERENCES MUTUAL_FUND (symbol),
+    CONSTRAINT CLOSING_PRICE_SYMBOL_FK FOREIGN KEY (symbol) REFERENCES MUTUAL_FUND (symbol) on delete cascade,
     CONSTRAINT CLOSING_PRICE_CK CHECK ( price > 0)
 );

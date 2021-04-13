@@ -340,3 +340,22 @@ CREATE TRIGGER buy_on_price
     ON closing_price
     FOR EACH ROW
 EXECUTE FUNCTION buy_on_price_helper();
+
+--Task #1: Erase the database
+CREATE OR REPLACE PROCEDURE erase_database()
+AS
+$$
+BEGIN
+    delete from mutual_fund;
+    delete from closing_price;
+    delete from customer;
+    delete from allocation;
+    delete from prefers;
+    delete from owns;
+    delete from administrator;
+    delete from trxlog;
+    delete from mutual_date; --Still unsure about this one
+END;
+$$ LANGUAGE plpgsql;
+
+call erase_database();
