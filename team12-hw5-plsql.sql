@@ -384,3 +384,19 @@ end;
 $$ LANGUAGE plpgsql;
 
 call add_customer('Chris2', 'Chris213 Flores', 'chrisf@betterfuture.com', '1st street', 'pwd', null)
+
+--Task #3: Add new mutual fund
+CREATE OR REPLACE PROCEDURE new_mutual_fund(symbol varchar(20), name varchar(30), description varchar(100),
+                                            category CATEGORY_DOMAIN, c_date date)
+as
+$$
+BEGIN
+
+    insert into mutual_fund
+    values(new_mutual_fund.symbol, new_mutual_fund.name, new_mutual_fund.description, new_mutual_fund.category,
+           new_mutual_fund.c_date);
+
+end;
+$$ LANGUAGE plpgsql;
+
+call new_mutual_fund('CF', 'Chris-Forbes', 'Chris Flores money corp', 'fixed', TO_DATE('06-JAN-20', 'DD-MON-YY'))
