@@ -359,3 +359,28 @@ END;
 $$ LANGUAGE plpgsql;
 
 call erase_database();
+
+--Task #2: Add a customer
+DROP DOMAIN IF EXISTS EMAIL_DOMAIN CASCADE;
+CREATE DOMAIN EMAIL_DOMAIN AS varchar(30) CHECK (VALUE ~ '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$');
+CREATE OR REPLACE PROCEDURE add_customer(login varchar(10), name varchar(20), email EMAIL_DOMAIN,
+                                            address  varchar(30), password varchar(10), balance  decimal(10, 2))
+as
+$$
+declare
+    input_balance int;
+begin
+    input_balance:= add_customer.balance;
+    if input_balance is null then
+        input_balance:= 0;
+    end if;
+
+
+    insert into customer
+    values(add_customer.login, add_customer.name, add_customer.email,
+            add_customer.address, add_customer.password, input_balance);
+
+end;
+$$ LANGUAGE plpgsql;
+
+call add_customer('Chris2', 'Chris213 Flores', 'chrisf@betterfuture.com', '1st street', 'pwd', null)
