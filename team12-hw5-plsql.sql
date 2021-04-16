@@ -400,3 +400,35 @@ end;
 $$ LANGUAGE plpgsql;
 
 call new_mutual_fund('CF', 'Chris-Forbes', 'Chris Flores money corp', 'fixed', TO_DATE('06-JAN-20', 'DD-MON-YY'))
+
+--Task #4: Update share quotes for a day
+-- I think I just have to change the Closing_Price table but I'm not sure
+CREATE OR REPLACE PROCEDURE update_share_quotes(strings text[]) --symbol varchar(20), price decimal(10, 2))
+as
+$$
+declare
+    number_strings integer := array_length(strings, 1);
+    string_index integer := 1;
+    input_symbol varchar(20);
+    input_price decimal(10, 2);
+begin
+WHILE string_index <= number_strings LOOP
+      --RAISE NOTICE '%', strings[string_index];
+      if mod(string_index, 2) = 1 then
+        input_symbol := strings[string_index];
+      else
+        input_price := strings[string_index];
+        insert into closing_price
+        values(input_symbol, input_price, current_date);--TO_DATE(CURRENT_DATE, 'DD-MON-YY'));
+        --update closing_price
+        --    set price = input_price
+        --where symbol = input_symbol;
+        RAISE NOTICE 'Inserted: %, %', input_symbol, input_price;
+      end if;
+      string_index = string_index + 1;
+   END LOOP;
+
+end;
+$$ LANGUAGE plpgsql;
+
+call update_share_quotes('{MM,15.00, RE,14.20, STB,11.40}')
