@@ -341,6 +341,9 @@ CREATE TRIGGER buy_on_price
     FOR EACH ROW
 EXECUTE FUNCTION buy_on_price_helper();
 
+                                                                                      
+--ADMINISTRATOR TASKS:                                                                                      
+                                                                                      
 --Task #1: Erase the database
 CREATE OR REPLACE PROCEDURE erase_database()
 AS
@@ -432,3 +435,9 @@ end;
 $$ LANGUAGE plpgsql;
 
 call update_share_quotes('{MM,15.00, RE,14.20, STB,11.40}')
+                                                
+--Task #5: Show top-k highest volume categories
+                                                
+--Task #6: Rank all investors
+                                                
+--Task #7: Update the current (pseudo) date                                                
