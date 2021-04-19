@@ -475,4 +475,16 @@ AS
     $$
     LANGUAGE plpgsql;
 
---Task #7: Update the current (pseudo) date                                                
+--Task #7: Update the current (pseudo) date
+--note that this takes an argument of type date
+CREATE OR REPLACE PROCEDURE set_current_date(new_date date)
+AS
+    $$
+    BEGIN
+        UPDATE mutual_date
+        SET p_date = new_date;
+    END;
+    $$
+LANGUAGE plpgsql;
+
+--CALL set_current_date(TO_DATE('01-01-2000', 'DD-MM-YYYY'));
