@@ -451,6 +451,28 @@ END;
     LANGUAGE plpgsql;
 
 SELECT show_k_highest_volume_categories(1);
+
+
 --Task #6: Rank all investors
-                                                
+CREATE OR REPLACE FUNCTION rank_all_investors()
+    RETURNS table (login varchar(10), wealth decimal(10, 2), rank bigint)
+AS
+    $$
+    BEGIN
+        RETURN QUERY (
+        SELECT owns.login, SUM(owns.shares * maxprices.price) AS wealth, RANK()
+            over (ORDER BY SUM(owns.shares * maxprices.price) DESC)
+        FROM owns
+        JOIN
+        (SELECT a.symbol, a.price, a.p_date FROM closing_price a inner join
+            (SELECT symbol, max(p_date) as max_date FROM closing_price GROUP BY symbol) b
+                on a.symbol = b.symbol AND a.p_date = b.max_date) maxprices
+        ON owns.symbol = maxprices.symbol
+        GROUP BY owns.login
+        ORDER BY wealth DESC
+        );
+    END;
+    $$
+    LANGUAGE plpgsql;
+
 --Task #7: Update the current (pseudo) date                                                
