@@ -386,7 +386,7 @@ begin
 end;
 $$ LANGUAGE plpgsql;
 
-call add_customer('Chris2', 'Chris213 Flores', 'chrisf@betterfuture.com', '1st street', 'pwd', null)
+call add_customer('Chris2', 'Chris213 Flores', 'chrisf@betterfuture.com', '1st street', 'pwd', null);
 
 --Task #3: Add new mutual fund
 CREATE OR REPLACE PROCEDURE new_mutual_fund(symbol varchar(20), name varchar(30), description varchar(100),
@@ -402,7 +402,7 @@ BEGIN
 end;
 $$ LANGUAGE plpgsql;
 
-call new_mutual_fund('CF', 'Chris-Forbes', 'Chris Flores money corp', 'fixed', TO_DATE('06-JAN-20', 'DD-MON-YY'))
+call new_mutual_fund('CF', 'Chris-Forbes', 'Chris Flores money corp', 'fixed', TO_DATE('06-JAN-20', 'DD-MON-YY'));
 
 --Task #4: Update share quotes for a day
 -- I think I just have to change the Closing_Price table but I'm not sure
@@ -434,10 +434,23 @@ WHILE string_index <= number_strings LOOP
 end;
 $$ LANGUAGE plpgsql;
 
-call update_share_quotes('{MM,15.00, RE,14.20, STB,11.40}')
+call update_share_quotes('{MM,15.00, RE,14.20, STB,11.40}');
                                                 
 --Task #5: Show top-k highest volume categories
-                                                
+CREATE OR REPLACE FUNCTION show_k_highest_volume_categories(k integer) RETURNS table (category CATEGORY_DOMAIN)
+AS
+    $$
+DECLARE top_k int;
+BEGIN
+    top_k = show_k_highest_volume_categories.k;
+    RETURN QUERY
+        (SELECT mutual_fund.category FROM mutual_fund JOIN owns o ON mutual_fund.symbol = o.symbol
+        GROUP BY mutual_fund.category ORDER BY SUM(shares) DESC LIMIT top_k);
+END;
+    $$
+    LANGUAGE plpgsql;
+
+SELECT show_k_highest_volume_categories(1);
 --Task #6: Rank all investors
                                                 
 --Task #7: Update the current (pseudo) date                                                
