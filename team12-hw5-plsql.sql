@@ -450,7 +450,7 @@ END;
     $$
     LANGUAGE plpgsql;
 
-SELECT show_k_highest_volume_categories(1);
+--SELECT show_k_highest_volume_categories(1);
 
 
 --Task #6: Rank all investors
