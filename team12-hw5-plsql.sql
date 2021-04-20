@@ -514,3 +514,21 @@ $$
 $$LANGUAGE plpgsql;
 
 --select customer_balance_and_shares('mike');
+
+--Task #2: Show mutual funds sorted by name
+CREATE OR REPLACE FUNCTION customer_balance_and_shares()
+returns table(symbol varchar(20), name varchar(30), description varchar(100),
+                category CATEGORY_DOMAIN, c_date date)
+as
+    $$
+    begin
+        return query(
+        Select MF.symbol, MF.name, MF.description,
+                MF.category, MF.c_date
+        from mutual_fund MF
+        order by MF.name
+        );
+    end;
+    $$ Language plpgsql;
+
+select customer_balance_and_shares();
