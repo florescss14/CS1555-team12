@@ -4,7 +4,7 @@ import java.io.*;
 import java.util.Properties;
 import java.util.Scanner;
 
-public class team23 {
+public class team12 {
     public static void main(String args[]) throws
         SQLException, ClassNotFoundException, IOException {
         Class.forName("org.postgresql.Driver");
