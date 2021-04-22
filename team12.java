@@ -208,7 +208,27 @@ public class team12 {
 	}
 
 	private static void addFund(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
+		print("Please input Mutual Fund as follows: Symbol, Name, Description, Category, Current_Date(DD-MON-YY)");
+		String input = reader.nextLine();
+		String delimiters = ", |,";
+		String values[] = input.split(delimiters);
+		
+		String symbol = values[0];
+		String name = values[1];
+		String description = values[2];
+		String category = values[3];
+		String c_date = values[4];
+
+		try {
+			st.executeUpdate("call new_mutual_fund(\'" + symbol + "\', \'" + name + "\', \'"+ description +"\', \'"+ category +"\', TO_DATE(\'"+ c_date +"\', \'DD-MON-YY\'));");
+			conn.commit();
+			
+		} catch (SQLException e) {
+			
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 		
 	}
 
