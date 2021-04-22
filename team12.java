@@ -17,7 +17,7 @@ public class team12 {
         Scanner reader = new Scanner(System.in);
         
         //CHANGE PW (2nd arg)
-        props.setProperty("password", "pass");
+        props.setProperty("password", "Realmadrid14*");
         
         Connection conn = DriverManager.getConnection(url, props);
 
@@ -184,7 +184,23 @@ public class team12 {
 	}
 
 	private static void showCustomer(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
+		print("Enter Login:");
+		String login = reader.nextLine();
+		
+		try {
+			ResultSet res = st.executeQuery("select * from customer_balance_and_shares(\'" + login + "\');");
+			conn.commit();
+			print("Name, Balance, Shares");
+			while(res.next()){
+				System.out.print(res.getString(1) + ", ");    //First Column
+				System.out.print(res.getString(2) + ", ");    //First Column
+				System.out.println(res.getString(3));    //First Column
+			}
+			
+		} catch (SQLException e) {
+			
+			e.printStackTrace();
+		}
 		
 	}
 
@@ -375,7 +391,7 @@ public class team12 {
 			print("7: Update the current date (i.e., the \"pseudo\" date)");
     	}else {
     		print("Customer interface:");
-			print("1: Show the customer’s balance and total number of shares");
+			print("1: Show the customer\'s balance and total number of shares");
 			print("2: Show mutual funds sorted by name");
 			print("3: Show mutual funds sorted by prices on a date");
 			print("4: Search for a mutual fund");

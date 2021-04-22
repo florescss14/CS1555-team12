@@ -500,12 +500,12 @@ $$
     begin
 
         return query(
-            select customer.name, customer.balance, sum.shares
+            select customer.name, customer.balance::decimal(10,2), sum.shares::integer
             from customer
             join(
             select owns.login, sum(owns.shares) as shares
             from owns
-            where input_login = owns.login
+            where 'mike' = owns.login
             group by owns.login
                 ) sum
             on customer.login = sum.login
@@ -513,7 +513,7 @@ $$
     end;
 $$LANGUAGE plpgsql;
 
---select customer_balance_and_shares('mike');
+select * from customer_balance_and_shares('mike');
 
 --Task #2: Show mutual funds sorted by name
 CREATE OR REPLACE FUNCTION customer_balance_and_shares()
