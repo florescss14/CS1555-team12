@@ -386,7 +386,7 @@ begin
 end;
 $$ LANGUAGE plpgsql;
 
-call add_customer('Chris2', 'Chris213 Flores', 'chrisf@betterfuture.com', '1st street', 'pwd', null);
+call add_customer('Chris2', 'Chris213 Flores', 'chrisf@betterfuture.com', null, 'pwd', null);
 
 --Task #3: Add new mutual fund
 CREATE OR REPLACE PROCEDURE new_mutual_fund(symbol varchar(20), name varchar(30), description varchar(100),
@@ -442,7 +442,7 @@ AS
     $$
 DECLARE top_k int;
 BEGIN
-    top_k = show_k_highest_volume_categories.k;
+    top_k = k;
     RETURN QUERY
         (SELECT mutual_fund.category FROM mutual_fund JOIN owns o ON mutual_fund.symbol = o.symbol
         GROUP BY mutual_fund.category ORDER BY SUM(shares) DESC LIMIT top_k);
@@ -475,6 +475,8 @@ AS
     $$
     LANGUAGE plpgsql;
 
+--select rank_all_investors();
+
 --Task #7: Update the current (pseudo) date
 --note that this takes an argument of type date
 CREATE OR REPLACE PROCEDURE set_current_date(new_date date)
@@ -488,3 +490,45 @@ AS
 LANGUAGE plpgsql;
 
 --CALL set_current_date(TO_DATE('01-01-2000', 'DD-MM-YYYY'));
+
+--Customer Tasks
+--Task #1: Show the customer’s balance and total number of shares
+CREATE OR REPLACE FUNCTION customer_balance_and_shares(input_login varchar(10))
+returns table (name varchar(20), balance  decimal(10, 2), shares integer)
+as
+$$
+    begin
+
+        return query(
+            select customer.name, customer.balance, sum.shares
+            from customer
+            join(
+            select owns.login, sum(owns.shares) as shares
+            from owns
+            where input_login = owns.login
+            group by owns.login
+                ) sum
+            on customer.login = sum.login
+        );
+    end;
+$$LANGUAGE plpgsql;
+
+--select customer_balance_and_shares('mike');
+
+--Task #2: Show mutual funds sorted by name
+CREATE OR REPLACE FUNCTION customer_balance_and_shares()
+returns table(symbol varchar(20), name varchar(30), description varchar(100),
+                category CATEGORY_DOMAIN, c_date date)
+as
+    $$
+    begin
+        return query(
+        Select MF.symbol, MF.name, MF.description,
+                MF.category, MF.c_date
+        from mutual_fund MF
+        order by MF.name
+        );
+    end;
+    $$ Language plpgsql;
+
+select customer_balance_and_shares();
