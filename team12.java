@@ -189,12 +189,35 @@ public class team12 {
 	}
 
 	private static void updateTimestamp(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
+		print("Enter date to update date to (DD-MM-YYYY):");
+		String date = reader.nextLine();
+		try {
+			st.executeUpdate("CALL set_current_date(TO_DATE(\'" + date + "\', \'DD-MM-YYYY\'));");
+			conn.commit();
+			
+		} catch (SQLException e) {
+			
+			e.printStackTrace();
+		}
 		
 	}
 
 	private static void rankInvestors(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
+		print("Ranking all investors");
+		try{
+			ResultSet res = st.executeQuery("select * From rank_all_investors();");
+			conn.commit();
+			print("login, wealth, rank:");
+			while(res.next()){
+				System.out.print(res.getString(1) + ", ");    //First Column
+				System.out.print(res.getString(2) + ", ");    //First Column
+				System.out.println(res.getString(3));    //First Column
+			}
+		}catch (SQLException e) {
+			
+			e.printStackTrace();
+		}
+		
 		
 	}
 
@@ -203,11 +226,12 @@ public class team12 {
 		String k = reader.nextLine();
 		
 		try {
-			ResultSet res = st.executeQuery("SELECT show_k_highest_volume_categories("+ k +");");
+			ResultSet res = st.executeQuery("SELECT * From show_k_highest_volume_categories("+ k +");");
 			conn.commit();
+			print("Categories:");
 			while(res.next()){
 					System.out.println(res.getString(1));    //First Column
-				}
+			}
 			
 		} catch (SQLException e) {
 			

@@ -475,7 +475,7 @@ AS
     $$
     LANGUAGE plpgsql;
 
---select rank_all_investors();
+select rank_all_investors();
 
 --Task #7: Update the current (pseudo) date
 --note that this takes an argument of type date
