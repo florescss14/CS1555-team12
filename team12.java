@@ -199,7 +199,20 @@ public class team12 {
 	}
 
 	private static void showCategories(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
+		print("Enter value(integer) for top k categories");
+		String k = reader.nextLine();
+		
+		try {
+			ResultSet res = st.executeQuery("SELECT show_k_highest_volume_categories("+ k +");");
+			conn.commit();
+			while(res.next()){
+					System.out.println(res.getString(1));    //First Column
+				}
+			
+		} catch (SQLException e) {
+			
+			e.printStackTrace();
+		}
 		
 	}
 
