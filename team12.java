@@ -1,6 +1,7 @@
 
 import java.sql.*;
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Scanner;
 
@@ -202,13 +203,62 @@ public class team12 {
 		
 	}
 
-	private static void updateQuote(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
+	private static void updateQuote(Statement st, Connection conn, Scanner reader) throws FileNotFoundException {
+		print("Please specify the file name of your Mutual Funds ex. Sample.txt");
+		String fileName = reader.nextLine();
+		File myObj = new File(fileName);
+		Scanner fileReader = new Scanner(myObj);
+		ArrayList<String> myList = new ArrayList<String>();
+		String delimeters = ", |,";
+		String line[];
+		while(fileReader.hasNextLine()){
+			line = fileReader.nextLine().split(delimeters);
+			myList.add(line[0]);
+			myList.add(line[1]);
+		}
+		StringBuilder sqlCall = new StringBuilder();
 		
+		sqlCall.append("call update_share_quotes(\'{");
+		for(int i = 0; i < myList.size(); i++){
+			sqlCall.append(myList.get(i));
+			if(i + 1 != myList.size()){
+				sqlCall.append(", ");
+			}
+		}
+		sqlCall.append("}\');");
+		
+		try {
+			st.executeUpdate(sqlCall.toString());
+			conn.commit();
+			
+		} catch (SQLException e) {
+			
+			e.printStackTrace();
+		}
 	}
 
 	private static void addFund(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
+		print("Please input Mutual Fund as follows: Symbol, Name, Description, Category, Current_Date(DD-MON-YY)");
+		String input = reader.nextLine();
+		String delimiters = ", |,";
+		String values[] = input.split(delimiters);
+		
+		String symbol = values[0];
+		String name = values[1];
+		String description = values[2];
+		String category = values[3];
+		String c_date = values[4];
+
+		try {
+			st.executeUpdate("call new_mutual_fund(\'" + symbol + "\', \'" + name + "\', \'"+ description +"\', \'"+ category +"\', TO_DATE(\'"+ c_date +"\', \'DD-MON-YY\'));");
+			conn.commit();
+			
+		} catch (SQLException e) {
+			
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 		
 	}
 
