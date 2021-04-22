@@ -386,7 +386,7 @@ begin
 end;
 $$ LANGUAGE plpgsql;
 
-call add_customer('Chris2', 'Chris213 Flores', 'chrisf@betterfuture.com', '1st street', 'pwd', null);
+call add_customer('Chris2', 'Chris213 Flores', 'chrisf@betterfuture.com', null, 'pwd', null);
 
 --Task #3: Add new mutual fund
 CREATE OR REPLACE PROCEDURE new_mutual_fund(symbol varchar(20), name varchar(30), description varchar(100),

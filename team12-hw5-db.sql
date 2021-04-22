@@ -52,7 +52,7 @@ CREATE TABLE CUSTOMER
     login    varchar(10),
     name     varchar(20)    NOT NULL,
     email    EMAIL_DOMAIN,
-    address  varchar(30)    NOT NULL,
+    address  varchar(30),
     password varchar(10)    NOT NULL,
     balance  decimal(10, 2) NOT NULL,
     CONSTRAINT LOGIN_PK PRIMARY KEY (login),

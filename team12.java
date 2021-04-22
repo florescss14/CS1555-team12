@@ -16,20 +16,18 @@ public class team12 {
         Scanner reader = new Scanner(System.in);
         
         //CHANGE PW (2nd arg)
-        props.setProperty("password", "CHANGE_PASSWORD");
+        props.setProperty("password", "pass");
         
         Connection conn = DriverManager.getConnection(url, props);
 
         Statement st = conn.createStatement();
-        
         boolean operatingFlag = true;
     	boolean isAdmin = askAboutAdmin(reader);
 
         try {
-        	
-            conn.setAutoCommit(false);
-            st.executeUpdate("delete from RESERVATION_DETAIL");
-			
+			conn.setAutoCommit(false);
+        	//Not exactly sure what this does but it was stopping the code
+            //st.executeUpdate("delete from RESERVATION_DETAIL");
             while(operatingFlag) {
             	
             	boolean validInput = false;
@@ -65,10 +63,10 @@ public class team12 {
         reader.close();
     }
     
-    private static void interpretSelection(int in, boolean isAdmin, Statement st, Scanner reader, Connection conn) {
+    private static void interpretSelection(int in, boolean isAdmin, Statement st, Scanner reader, Connection conn) throws IOException {
 		if(isAdmin) {
 			if(in==1) {
-				eraseDatabase(st, conn);
+				eraseDatabase(st, conn, reader);
 			}
 			if(in==2) {
 				addCustomer(st, conn, reader);
@@ -215,12 +213,41 @@ public class team12 {
 	}
 
 	private static void addCustomer(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
+		print("Please input Customer as follows: Login, Name, Email, Password, Initial Balance (optional)");
+		String input = reader.nextLine();
+		String delimiters = ", |,";
+		String values[] = input.split(delimiters);
+
+		String login = values[0];
+        String name = values[1];
+        String email = values[2];
+		String password = values[3];
+		String balance;
+		if(values.length == 5){
+            balance = values[4];
+        }else{
+            balance = "null";
+        }
 		
+		
+		try {
+			st.executeUpdate("call add_customer(\'" + login + "\', \'" + name + "\', \'" + email + "\', \'null\', \'"+ password +"\', "+ balance +");");
+			conn.commit();
+			
+		} catch (SQLException e) {
+			
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
-	public static void eraseDatabase(Statement st, Connection conn){
-    	try {
+	public static void eraseDatabase(Statement st, Connection conn, Scanner reader) throws IOException{
+    	print("Are you sure? (y/n)");
+		if(input(reader).toLowerCase().charAt(0) != 'y'){
+			return;
+		}
+		
+		try {
 			st.executeUpdate("call erase_database()");
 			conn.commit();
 			
@@ -252,8 +279,27 @@ public class team12 {
     public static void printChoices(boolean admin) {
     	if(admin) {
     		print("Administrator interface:");
+			print("1: Erase the database");
+			print("2: Add a customer");
+			print("3: Add new mutual fund");
+			print("4: Update share quotes for a day");
+			print("5: Show top-k highest volume categories");
+			print("6: Rank all the investors");
+			print("7: Update the current date (i.e., the \"pseudo\" date)");
     	}else {
     		print("Customer interface:");
+			print("1: Show the customer’s balance and total number of shares");
+			print("2: Show mutual funds sorted by name");
+			print("3: Show mutual funds sorted by prices on a date");
+			print("4: Search for a mutual fund");
+			print("5: Deposit an amount for investment");
+			print("6: Buy shares");
+			print("7: Sell shares");
+			print("8: Show ROI (return of investment)");
+			print("9: Predict the gain or loss of the customer’s transactions");
+			print("10: Change allocation preference");
+			print("11: Rank the customer’s allocations");
+			print("12: Show portfolio [proc]");
     	}
     	print("0: Exit");
     	print("Enter selection:");
