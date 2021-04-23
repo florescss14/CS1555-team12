@@ -532,3 +532,25 @@ as
     $$ Language plpgsql;
 
 select customer_balance_and_shares();
+
+
+--Task 4
+CREATE OR REPLACE FUNCTION search_funds(keyword1 varchar(30), keyword2 varchar(30) DEFAULT NULL)
+RETURNS TABLE (fund_name varchar(30))
+AS
+    $$
+        BEGIN
+            IF keyword2 IS NULL THEN
+                RETURN QUERY (
+                    SELECT name FROM mutual_fund WHERE description LIKE '%' || keyword1 ||'%'
+                );
+            ELSE
+            RETURN QUERY (
+                SELECT name FROM mutual_fund WHERE description LIKE '%' || keyword1 ||'%' || keyword2 || '%'
+                    OR description LIKE '%' || keyword2 ||'%' || keyword1 || '%'
+            );
+        END IF;
+        END;
+    $$ LANGUAGE plpgsql;
+
+--SELECT search_funds('stock', 'dogecoin');
