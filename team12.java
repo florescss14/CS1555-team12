@@ -17,16 +17,19 @@ public class team12 {
         Scanner reader = new Scanner(System.in);
         
         //CHANGE PW (2nd arg)
-        props.setProperty("password", "Realmadrid14*");
+        props.setProperty("password", "Pass");
         
         Connection conn = DriverManager.getConnection(url, props);
 
         Statement st = conn.createStatement();
         boolean operatingFlag = true;
     	boolean isAdmin = askAboutAdmin(reader);
+		String userLogin;
+
+		conn.setAutoCommit(false);
+		userLogin = checkForPassword(st, conn, isAdmin, reader);
 
         try {
-			conn.setAutoCommit(false);
         	//Not exactly sure what this does but it was stopping the code
             //st.executeUpdate("delete from RESERVATION_DETAIL");
             while(operatingFlag) {
@@ -368,6 +371,35 @@ public class team12 {
     		return true;
     	return false;
     }
+	
+	//Will return the checked login of the user
+	public static String checkForPassword(Statement st, Connection conn, boolean isAdmin, Scanner reader){
+		while(true){
+			print("Enter your login:");
+			String login = reader.nextLine();
+			print("Enter your password:");
+			String password = reader.nextLine();
+			String table;
+			if(isAdmin){
+				table = "administrator";
+			}else{
+				table = "customer";
+			}
+			String query = "SELECT EXISTS(select * from " + table +" where login = \'"+ login + "\' and password = \'" + password + "\');"; 
+			try {
+				ResultSet rs = st.executeQuery(query);
+				conn.commit();
+				rs.next();
+				if(rs.getString(1).equalsIgnoreCase("t")){
+					return login;
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+			print("Incorrect Password Try Again");
+		
+		}
+	}
     public static String input(Scanner reader) throws IOException {
     	String line="";
     	//while(line!=null&&line.length()>0) {
