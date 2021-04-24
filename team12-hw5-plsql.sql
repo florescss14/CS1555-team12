@@ -715,7 +715,7 @@ AS
         END;
     $$ LANGUAGE plpgsql;
 
---SELECT search_funds('stock', 'dogecoin');
+SELECT search_funds('stock');
 
 
 --Task 5
@@ -759,4 +759,7 @@ CREATE OR REPLACE PROCEDURE buy_shares(log varchar(10), symb varchar(20), n_shar
     $$ LANGUAGE plpgsql;
 
 --CALL buy_shares('mike', 'RE', 1);
+
+--buy $$ of shares
+
 --Task 8

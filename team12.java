@@ -165,7 +165,9 @@ public class team12 {
 
 	private static void buyShares(Statement st, Connection conn, Scanner reader) {
 		// TODO Auto-generated method stub
-		
+		print("Enter symbol of fund to buy: ");
+		String sym = reader.nextLine();
+		print("Enter")
 	}
 
 	private static void depositAmount(Statement st, Connection conn, Scanner reader) {
@@ -175,7 +177,31 @@ public class team12 {
 
 	private static void searchForFund(Statement st, Connection conn, Scanner reader) {
 		// TODO Auto-generated method stub
-		
+		print("Enter a keyword to search for: ");
+		String k1 = reader.nextLine();
+		print("Enter a second keyword (optional, or just press enter): ");
+		String k2 = reader.nextLine();
+
+		try{
+			if(k2.length() > 1){
+				statement = conn.prepareStatement("select search_funds(?, ?)");
+				statement.setString(1, k1);
+				statement.setString(2, k2);
+				ResultSet funds = statement.executeQuery();
+				conn.commit();
+			}else{
+				statement = conn.prepareStatement("select search_funds(?)");
+				statement.setString(1, k1);
+				ResultSet funds = statement.executeQuery();
+				conn.commit();
+			}
+			//print funds
+			while(funds.next()){
+				print(funds.getString(1));
+			}
+		} catch (SQLException e){
+			e.printStackTrace();
+		}
 	}
 
 	private static void showFundsByPrice(Statement st, Connection conn, Scanner reader) {
