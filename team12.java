@@ -138,7 +138,21 @@ public class team12 {
 	}
 
 	private static void rankAllocations(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
+		try {
+			statement = conn.prepareStatement("select allocation_no, ROI_date(p_date, allocation_no)\r\n"
+					+ "from allocation\r\n"
+					+ "where login = ?\r\n"
+					+ "order by ROI_date(p_date, allocation_no) desc;");
+			statement.setString(1, userLogin);
+			ResultSet ROI = statement.executeQuery();
+			int i = 0;
+			while(ROI.next()){
+				print(i++ +": Allocation "+ROI.getString(1) + " ROI: "+ ROI.getString(2));
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 	}
 
@@ -270,9 +284,9 @@ public class team12 {
 			statement.setInt(3, n);
 			ResultSet res = statement.executeQuery();
 			if(res.next()){
-				print("\n Successfully sold " + n + " shares.\n");
+				print("\n Successfully sold " + n + " shares.");
 			} else{
-				print("\n Error selling shares. Are you sure you have enough shares to sell?\n");
+				print("\n Error selling shares. Are you sure you have enough shares to sell?");
 			}
 		}catch (SQLException e){
 			e.printStackTrace();
@@ -282,22 +296,66 @@ public class team12 {
 	private static void buyShares(Statement st, Connection conn, Scanner reader) {
 		// TODO Auto-generated method stub
 		print("Enter symbol of fund to buy: ");
-		String sym = reader.nextLine();
-		print("Enter the number of shares to buy: ");
-		int n = reader.nextInt();
-		try{
-			statement = conn.prepareStatement("select buy_shares(?, ?, ?)");
-			statement.setString(1, userLogin);
-			statement.setString(2, sym);
-			statement.setInt(3, n);
-			ResultSet res = statement.executeQuery();
-			if(res.next()){
-				print("\n Successfully bought " + n + " shares.\n");
-			}else{
-				print("\n Error buying shares. Check your balance?\n");
+		String sym = (reader.nextLine()).toUpperCase();
+		print("Do you want to buy shares by number of shares (1), or by dollar amount (2)?");
+		int pref = reader.nextInt();
+		if(pref == 2){
+			print("Enter the amount you want to spend in the format XXXX.XX: ");
+			Double amt = reader.nextDouble();
+			try{
+				//get balance, make sure user has enough
+				statement = conn.prepareStatement("select balance from customer where login = ?");
+				statement.setString(1, userLogin);
+				ResultSet res = statement.executeQuery();
+				res.next();
+				if(amt > res.getDouble(1)){
+					print("Error: balance too low");
+					return;
+				}
+				//calculate how many shares user can buy
+				Double price;
+				statement = conn.prepareStatement("SELECT CLOSING_PRICE.price FROM CLOSING_PRICE WHERE CLOSING_PRICE.symbol = ? ORDER BY CLOSING_PRICE.p_date DESC LIMIT 1");
+				statement.setString(1, sym);
+				res = statement.executeQuery();
+				res.next();
+				price = res.getDouble(1);
+				int shares_to_buy = (int)Math.floor(amt/price);
+				if(shares_to_buy == 0){
+					print("Error: not enough money");
+					return;
+				}
+				//buy shares
+				statement = conn.prepareStatement("select buy_shares(?, ?, ?)");
+				statement.setString(1, userLogin);
+				statement.setString(2, sym);
+				statement.setInt(3, shares_to_buy);
+				res = statement.executeQuery();
+				if(res.next()){
+					print("Successfully bought " + shares_to_buy + " shares.");
+				}else{
+					print("Error buying shares. Check your balance?");
+				}
+			}catch(SQLException e){
+				e.printStackTrace();
 			}
-		}catch(SQLException e){
-			e.printStackTrace();
+
+		}else if(pref == 1){
+			print("Enter the number of shares to buy: ");
+			int n = reader.nextInt();
+			try{
+				statement = conn.prepareStatement("select buy_shares(?, ?, ?)");
+				statement.setString(1, userLogin);
+				statement.setString(2, sym);
+				statement.setInt(3, n);
+				ResultSet res = statement.executeQuery();
+				if(res.next()){
+					print("\n Successfully bought " + n + " shares.");
+				}else{
+					print("\n Error buying shares. Check your balance?");
+				}
+			}catch(SQLException e){
+				e.printStackTrace();
+			}
 		}
 	}
 
