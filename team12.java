@@ -138,7 +138,21 @@ public class team12 {
 	}
 
 	private static void rankAllocations(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
+		try {
+			statement = conn.prepareStatement("select allocation_no, ROI_date(p_date, allocation_no)\r\n"
+					+ "from allocation\r\n"
+					+ "where login = ?\r\n"
+					+ "order by ROI_date(p_date, allocation_no) desc;");
+			statement.setString(1, userLogin);
+			ResultSet ROI = statement.executeQuery();
+			int i = 0;
+			while(ROI.next()){
+				print(i++ +": Allocation "+ROI.getString(1) + " ROI: "+ ROI.getString(2));
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 	}
 
