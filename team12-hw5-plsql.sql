@@ -655,30 +655,38 @@ as
 --select * from customer_balance_and_shares();
 
 --Task #3: Show mutual funds sorted by prices on a date
-CREATE OR REPLACE FUNCTION mutual_funds_on_date(s_date date, login varchar(10))
+CREATE OR REPLACE FUNCTION mutual_funds_on_date(s_date date, input_login varchar(10))
 returns table(symbol varchar(20), name varchar(30), description varchar(100),
-                category CATEGORY_DOMAIN, c_date date, price decimal(10, 2))
+                category CATEGORY_DOMAIN, c_date date, price decimal(10, 2), owned varchar(20))
 as
     $$
     begin
         return query(
-            select Current_Funds.symbol as symbol, Current_Funds.name, Current_Funds.description, Current_Funds.category, Current_Funds.c_date, Closing_Prices.price from(
-                select *
-                from mutual_fund
-                where mutual_fund.c_date <= s_date
-                ) as Current_Funds
-            join(
-                select CP.symbol, CP.price
-                from closing_price CP
-                where CP.p_date = s_date
-                ) as Closing_Prices
-            on Current_Funds.symbol = Closing_Prices.symbol
-            ORDER BY price DESC
+
+            select curr.symbol as symbol, curr.name, curr.description, curr.category, curr.c_date, curr.price, owned.symbol as owned from(
+            select CF.symbol as symbol, CF.name, CF.description, CF.category, CF.c_date, Closing_Prices.price from(
+                    select *
+                    from mutual_fund
+                    where mutual_fund.c_date <= s_date
+                    ) as CF
+                join(
+                    select CP.symbol, CP.price
+                    from closing_price CP
+                    where CP.p_date = s_date
+                    ) as Closing_Prices
+                on CF.symbol = Closing_Prices.symbol
+                ORDER BY price DESC) as curr
+                left join (
+                    select *
+                        from owns
+                        where owns.login = input_login) as owned
+                    on owned.symbol = curr.symbol
+            ORDER BY curr.price DESC
         );
     end;
     $$ Language plpgsql;
 
-select * from mutual_funds_on_date(to_date('30-03-20','DD-MM-YY'), 'mike');
+--select * from mutual_funds_on_date(to_date('30-03-20','DD-MM-YY'), 'mike');
 
 CREATE OR REPLACE FUNCTION customer_owns(input_login varchar(10))
 returns table(symbol varchar(20), name varchar(30), description varchar(100),
