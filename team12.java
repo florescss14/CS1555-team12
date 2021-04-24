@@ -1,11 +1,14 @@
 
 import java.sql.*;
+import java.sql.Types;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Scanner;
 
 public class team12 {
+	static PreparedStatement statement;
+	static String userLogin;
     public static void main(String args[]) throws
         SQLException, ClassNotFoundException, IOException {
         Class.forName("org.postgresql.Driver");
@@ -17,14 +20,13 @@ public class team12 {
         Scanner reader = new Scanner(System.in);
         
         //CHANGE PW (2nd arg)
-        props.setProperty("password", "Pass");
+        props.setProperty("password", "Realmadrid14*");
         
         Connection conn = DriverManager.getConnection(url, props);
 
         Statement st = conn.createStatement();
         boolean operatingFlag = true;
     	boolean isAdmin = askAboutAdmin(reader);
-		String userLogin;
 
 		conn.setAutoCommit(false);
 		userLogin = checkForPassword(st, conn, isAdmin, reader);
@@ -177,21 +179,53 @@ public class team12 {
 	}
 
 	private static void showFundsByPrice(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
+		print("Enter date (DD-MM-YYYY):");
+		String date = reader.nextLine();
+		
+		try {
+			statement = conn.prepareStatement("select * from mutual_funds_on_date(to_date(?,\'DD-MM-YY\'), ?);");
+			statement.setString(1, date);
+			statement.setString(2, userLogin);
+			ResultSet funds_on_date = statement.executeQuery();
+
+			conn.commit();
+			
+			
+		} catch (SQLException e) {
+			
+			e.printStackTrace();
+		}
 		
 	}
 
 	private static void showFundsByName(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
+		try {
+			statement = conn.prepareStatement("select * from customer_balance_and_shares();");
+			ResultSet res = statement.executeQuery();
+			conn.commit();
+			print("Symbol, Name, Description, Category, Date Founded:");
+			while(res.next()){
+				System.out.print(res.getString(1) + ", ");    //First Column
+				System.out.print(res.getString(2) + ", ");    //Second Column
+				System.out.print(res.getString(3) + ", ");    //Third Column
+				System.out.print(res.getString(4) + ", ");    //Fourth Column
+				System.out.println(res.getString(5));    //Fifth Column
+			}
+			System.out.println();
+			
+		} catch (SQLException e) {
+			
+			e.printStackTrace();
+		}
 		
 	}
 
 	private static void showCustomer(Statement st, Connection conn, Scanner reader) {
-		print("Enter Login:");
-		String login = reader.nextLine();
-		
+			
 		try {
-			ResultSet res = st.executeQuery("select * from customer_balance_and_shares(\'" + login + "\');");
+			statement = conn.prepareStatement("select * from customer_balance_and_shares(?);");
+			statement.setString(1, userLogin);
+			ResultSet res = statement.executeQuery();
 			conn.commit();
 			print("Name, Balance, Shares");
 			while(res.next()){
@@ -211,7 +245,10 @@ public class team12 {
 		print("Enter date to update date to (DD-MM-YYYY):");
 		String date = reader.nextLine();
 		try {
-			st.executeUpdate("CALL set_current_date(TO_DATE(\'" + date + "\', \'DD-MM-YYYY\'));");
+			statement = conn.prepareStatement("CALL set_current_date(TO_DATE(?, \'DD-MM-YYYY\'));");
+			statement.setString(1, date);
+			print(statement.toString());
+			statement.executeUpdate();
 			conn.commit();
 			
 		} catch (SQLException e) {
@@ -245,7 +282,9 @@ public class team12 {
 		String k = reader.nextLine();
 		
 		try {
-			ResultSet res = st.executeQuery("SELECT * From show_k_highest_volume_categories("+ k +");");
+			statement = conn.prepareStatement("SELECT * From show_k_highest_volume_categories(?);");
+			statement.setInt(1, Integer.parseInt(k));
+			ResultSet res = statement.executeQuery();
 			conn.commit();
 			print("Categories:");
 			while(res.next()){
@@ -306,7 +345,14 @@ public class team12 {
 		String c_date = values[4];
 
 		try {
-			st.executeUpdate("call new_mutual_fund(\'" + symbol + "\', \'" + name + "\', \'"+ description +"\', \'"+ category +"\', TO_DATE(\'"+ c_date +"\', \'DD-MON-YY\'));");
+			statement = conn.prepareStatement("call new_mutual_fund(?, ?, ?, ?, TO_DATE(?, \'DD-MON-YY\'));");
+			statement.setString(1, symbol);
+			statement.setString(2, name);
+			statement.setString(3, description);
+			statement.setString(4, category);
+			statement.setString(5, c_date);
+			statement.executeUpdate();
+			
 			conn.commit();
 			
 		} catch (SQLException e) {
@@ -329,15 +375,22 @@ public class team12 {
         String email = values[2];
 		String password = values[3];
 		String balance;
-		if(values.length == 5){
-            balance = values[4];
-        }else{
-            balance = "null";
-        }
 		
 		
 		try {
-			st.executeUpdate("call add_customer(\'" + login + "\', \'" + name + "\', \'" + email + "\', \'null\', \'"+ password +"\', "+ balance +");");
+			statement = conn.prepareStatement("call add_customer(?, ?, ?, \'null\', ?, ?);");
+			statement.setString(1, login);
+			statement.setString(2, name);
+			statement.setString(3, email);
+			statement.setString(4, password);
+			if(values.length == 5){
+				balance = values[4];
+				statement.setString(5, balance);
+			}else{
+				statement.setNull(5, Types.DECIMAL);
+			}
+			print(statement.toString());
+			statement.executeUpdate();
 			conn.commit();
 			
 		} catch (SQLException e) {
@@ -385,9 +438,12 @@ public class team12 {
 			}else{
 				table = "customer";
 			}
-			String query = "SELECT EXISTS(select * from " + table +" where login = \'"+ login + "\' and password = \'" + password + "\');"; 
 			try {
-				ResultSet rs = st.executeQuery(query);
+				//table login password
+				statement = conn.prepareStatement("SELECT EXISTS(select * from " + table + " where login = ? and password = ?);");
+				statement.setString(1, login);
+				statement.setString(2, password); 
+				ResultSet rs = statement.executeQuery();
 				conn.commit();
 				rs.next();
 				if(rs.getString(1).equalsIgnoreCase("t")){
@@ -433,7 +489,7 @@ public class team12 {
 			print("8: Show ROI (return of investment)");
 			print("9: Predict the gain or loss of the customer’s transactions");
 			print("10: Change allocation preference");
-			print("11: Rank the customer’s allocations");
+			print("11: Rank the customer\'s allocations");
 			print("12: Show portfolio [proc]");
     	}
     	print("0: Exit");

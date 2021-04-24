@@ -361,7 +361,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-call erase_database();
+--call erase_database();
 
 --Task #2: Add a customer
 DROP DOMAIN IF EXISTS EMAIL_DOMAIN CASCADE;
@@ -402,7 +402,7 @@ BEGIN
 end;
 $$ LANGUAGE plpgsql;
 
-call new_mutual_fund('CF', 'Chris-Forbes', 'Chris Flores money corp', 'fixed', TO_DATE('06-JAN-20', 'DD-MON-YY'));
+--call new_mutual_fund('CF', 'Chris-Forbes', 'Chris Flores money corp', 'fixed', TO_DATE('06-JAN-20', 'DD-MON-YY'));
 
 --Task #4: Update share quotes for a day
 -- I think I just have to change the Closing_Price table but I'm not sure
@@ -434,7 +434,7 @@ WHILE string_index <= number_strings LOOP
 end;
 $$ LANGUAGE plpgsql;
 
-call update_share_quotes('{MM,15.00, RE,14.20, STB,11.40}');
+--call update_share_quotes('{MM,15.00, RE,14.20, STB,11.40}');
                                                 
 --Task #5: Show top-k highest volume categories
 CREATE OR REPLACE FUNCTION show_k_highest_volume_categories(k integer) RETURNS table (category CATEGORY_DOMAIN)
@@ -505,7 +505,7 @@ $$
             join(
             select owns.login, sum(owns.shares) as shares
             from owns
-            where 'mike' = owns.login
+            where input_login = owns.login
             group by owns.login
                 ) sum
             on customer.login = sum.login
@@ -531,8 +531,49 @@ as
     end;
     $$ Language plpgsql;
 
-select customer_balance_and_shares();
+--select * from customer_balance_and_shares();
 
+--Task #3: Show mutual funds sorted by prices on a date
+CREATE OR REPLACE FUNCTION mutual_funds_on_date(s_date date, login varchar(10))
+returns table(symbol varchar(20), name varchar(30), description varchar(100),
+                category CATEGORY_DOMAIN, c_date date, price decimal(10, 2))
+as
+    $$
+    begin
+        return query(
+            select Current_Funds.symbol as symbol, Current_Funds.name, Current_Funds.description, Current_Funds.category, Current_Funds.c_date, Closing_Prices.price from(
+                select *
+                from mutual_fund
+                where mutual_fund.c_date <= s_date
+                ) as Current_Funds
+            join(
+                select CP.symbol, CP.price
+                from closing_price CP
+                where CP.p_date = s_date
+                ) as Closing_Prices
+            on Current_Funds.symbol = Closing_Prices.symbol
+            ORDER BY price DESC
+        );
+    end;
+    $$ Language plpgsql;
+
+select * from mutual_funds_on_date(to_date('30-03-20','DD-MM-YY'), 'mike');
+
+CREATE OR REPLACE FUNCTION customer_owns(input_login varchar(10))
+returns table(symbol varchar(20), name varchar(30), description varchar(100),
+                category CATEGORY_DOMAIN, c_date date)
+as
+    $$
+    begin
+        return query (
+            select *
+            from owns
+            where login = input_login
+        );
+    end;
+$$ LANGUAGE plpgsql;
+
+--select mutual_funds_on_date(TO_DATE('30-MAR-20', 'DD-MON-YY') ,'mike');
 
 --Task 4
 CREATE OR REPLACE FUNCTION search_funds(keyword1 varchar(30), keyword2 varchar(30) DEFAULT NULL)
