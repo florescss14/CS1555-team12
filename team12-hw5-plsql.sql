@@ -964,6 +964,64 @@ end;
 $$ LANGUAGE plpgsql;
 
 call change_allocation_preferences('{MM,0.5,RE,0.5}', 'mike');
+                                                                                              
+--Task 11                                                                                              
+create or replace function getClosestPrice(input_date timestamp, s varchar(10))
+returns int
+as $$
+    declare
+        x int;
+    begin
+        select price into x from
+        closing_price
+        where symbol = s and (DATE_PART('month', input_date) = DATE_PART('month', p_date))
+        order by abs(DATE_PART('day', input_date) - DATE_PART('day', p_date)) asc
+        limit 1;
+        return x;
+    end;
+$$ language plpgsql;
+
+
+create or replace function ROI_from_date_bottom(t timestamp, s varchar(10))
+returns int as
+    $$
+    declare
+        x int;
+    begin
+        select getClosestPrice(t,s) into x;
+        return x;
+    end;
+    $$ language plpgsql;
+
+create or replace function ROI_from_date_top(t timestamp, s varchar(10))
+returns int as
+    $$
+    declare
+        x int;
+    begin
+        select getRecentPrice(s) into x;
+        x = x - ROI_from_date_bottom(t,s);
+        return x;
+    end;
+    $$ language plpgsql;
+
+create or replace function ROI_date(t timestamp, n int)
+returns float4 as
+    $$
+    declare
+        curs1 refcursor;
+        rec record;
+        perc float4 = 0;
+    begin
+        open curs1 for select * from prefers where allocation_no = n;
+        loop
+            fetch curs1 into rec;
+            exit when not found;
+            perc = perc + rec.percentage*(1.0*(ROI_from_date_top(t, rec.symbol)))/(ROI_from_date_bottom(t, rec.symbol));
+        end loop;
+        return perc;
+    end;
+    $$ language plpgsql;
 
 --Task #12: Show portfolio
 create or replace function show_portfolio(input_login varchar(10))
