@@ -284,9 +284,6 @@ BEGIN
 END;
 $$ LANGUAGE PLPGSQL;
 
-CALL deposit_for_investment('mary', 5);
-CALL deposit_for_investment('mike', 100);
-
 --Question 4:
 CREATE OR REPLACE FUNCTION buy_shares(login varchar(10), symbol varchar(20), number_of_shares int)
     RETURNS BOOLEAN AS
@@ -381,9 +378,6 @@ BEGIN
 
 END;
 $$ LANGUAGE PLPGSQL;
-
-SELECT buy_shares('mary', 'MM', 1);
-
 -- Question 5:
 CREATE OR REPLACE FUNCTION buy_on_date_helper()
     RETURNS trigger AS
@@ -570,9 +564,7 @@ WHILE string_index <= number_strings LOOP
 
 end;
 $$ LANGUAGE plpgsql;
-
---call update_share_quotes('{MM,15.00, RE,14.20, STB,11.40}');
-                                                
+                                         
 --Task #5: Show top-k highest volume categories
 CREATE OR REPLACE FUNCTION show_k_highest_volume_categories(k integer) RETURNS table (category CATEGORY_DOMAIN)
 AS
@@ -586,8 +578,6 @@ BEGIN
 END;
     $$
     LANGUAGE plpgsql;
-
-SELECT show_k_highest_volume_categories(2);
 
 
 --Task #6: Rank all investors
@@ -612,8 +602,6 @@ AS
     $$
     LANGUAGE plpgsql;
 
-select rank_all_investors();
-
 --Task #7: Update the current (pseudo) date
 --note that this takes an argument of type date
 CREATE OR REPLACE PROCEDURE set_current_date(new_date date)
@@ -625,8 +613,6 @@ AS
     END;
     $$
 LANGUAGE plpgsql;
-
---CALL set_current_date(TO_DATE('01-01-2000', 'DD-MM-YYYY'));
 
 --*****************Customer Tasks*************************************************************************************************
 
@@ -652,8 +638,6 @@ $$
     end;
 $$LANGUAGE plpgsql;
 
-select * from customer_balance_and_shares('mike');
-
 --Task #2: Show mutual funds sorted by name
 CREATE OR REPLACE FUNCTION customer_balance_and_shares()
 returns table(symbol varchar(20), name varchar(30), description varchar(100),
@@ -669,8 +653,6 @@ as
         );
     end;
     $$ Language plpgsql;
-
---select * from customer_balance_and_shares();
 
 --Task #3: Show mutual funds sorted by prices on a date
 CREATE OR REPLACE FUNCTION mutual_funds_on_date(s_date date, input_login varchar(10))
@@ -703,8 +685,6 @@ as
     end;
     $$ Language plpgsql;
 
-select * from mutual_funds_on_date(to_date('30-03-20','DD-MM-YY'), 'mike');
-
 CREATE OR REPLACE FUNCTION customer_owns(input_login varchar(10))
 returns table(login varchar(10) ,symbol varchar(20), name varchar(30), description varchar(100),
                 category CATEGORY_DOMAIN, c_date date, shares integer)
@@ -721,10 +701,6 @@ as
         );
     end;
 $$ LANGUAGE plpgsql;
-
---select mutual_funds_on_date(TO_DATE('30-MAR-20', 'DD-MON-YY') ,'mike');
-
-
 
 DROP PROCEDURE buy_shares(log varchar(10), symb varchar(20), amount decimal(10, 2));
 CREATE OR REPLACE PROCEDURE buy_shares(log varchar(10), symb varchar(20), amount decimal(10, 2)) AS
@@ -759,7 +735,6 @@ CREATE OR REPLACE PROCEDURE buy_shares(log varchar(10), symb varchar(20), amount
         end if;
     end
     $$ LANGUAGE plpgsql;
---CALL buy_shares('mike', 'RE', 100.00);
 
 --Task 7:
 CREATE OR REPLACE FUNCTION sell_shares(login varchar(10), symbol varchar(20), number_of_shares int)
@@ -962,9 +937,7 @@ WHILE string_index <= number_strings LOOP
 
 end;
 $$ LANGUAGE plpgsql;
-
-call change_allocation_preferences('{MM,0.5,RE,0.5}', 'mike');
-                                                                                              
+                                                                              
 --Task 11                                                                                              
 create or replace function getClosestPrice(input_date timestamp, s varchar(10))
 returns int
@@ -1042,8 +1015,6 @@ $$
 $$ language plpgsql;
 
 
-select * from show_portfolio('mike');
-
 create or replace function total_value_of_portfolio(input_login varchar(10))
 returns decimal (10,2)
 as
@@ -1058,8 +1029,6 @@ $$
         return total;
     end;
 $$language plpgsql;
-
-select total_value_of_portfolio('mike');
 
 create or replace function owns_with_price(input_login varchar(10)) returns table(login  varchar(10), symbol varchar(20), shares integer, current_price decimal(10,2))
 as
@@ -1078,4 +1047,3 @@ $$
     end;
 $$language plpgsql;
 
-select * from owns_with_price('mike')
