@@ -32,8 +32,6 @@ public class team12 {
 		userLogin = checkForPassword(st, conn, isAdmin, reader);
 
         try {
-        	//Not exactly sure what this does but it was stopping the code
-            //st.executeUpdate("delete from RESERVATION_DETAIL");
             while(operatingFlag) {
             	
             	boolean validInput = false;
@@ -154,8 +152,21 @@ public class team12 {
 	}
 
 	private static void showROI(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
-		
+		try {
+			statement = conn.prepareStatement( "select show_roi(?);");
+			statement.setString(1, userLogin);
+			ResultSet ROI = statement.executeQuery();
+			while(ROI.next()){
+				String a = ROI.getString(1);
+				if(a.length()==0)
+					print("You have no investments!");
+				else
+					print("\n"+a+"\n");
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	private static void sellShares(Statement st, Connection conn, Scanner reader) {
@@ -214,8 +225,21 @@ public class team12 {
 			statement.setString(1, date);
 			statement.setString(2, userLogin);
 			ResultSet funds_on_date = statement.executeQuery();
-
 			conn.commit();
+			print("Currently Owned stocks will appear with a star (*) next to them");
+			print("Symbol, Name, Description, Category, c_date:");
+			while(funds_on_date.next()){
+				if(funds_on_date.getString("owned") != null){
+					System.out.print("* ");
+				}else{
+					System.out.print("  ");
+				}
+				System.out.print(funds_on_date.getString(1) + ", ");    //First Column
+				System.out.print(funds_on_date.getString(2) + ", ");    //First Column
+				System.out.print(funds_on_date.getString(3) + ", ");    //First Column
+				System.out.print(funds_on_date.getString(4) + ", ");    //First Column
+				System.out.println(funds_on_date.getString(5));    //First Column
+			}
 			
 			
 		} catch (SQLException e) {
