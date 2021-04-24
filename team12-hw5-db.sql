@@ -151,3 +151,17 @@ CREATE TABLE CLOSING_PRICE
     CONSTRAINT CLOSING_PRICE_SYMBOL_FK FOREIGN KEY (symbol) REFERENCES MUTUAL_FUND (symbol) on delete cascade,
     CONSTRAINT CLOSING_PRICE_CK CHECK ( price > 0)
 );
+
+select Current_Funds.symbol as symbol, name, description, category, c_date, price from(
+    select *
+    from mutual_fund
+    where c_date <= TO_DATE('30-MAR-20', 'DD-MON-YY')
+    ) as Current_Funds
+join(
+    select CP.symbol, CP.price
+    from closing_price CP
+    where CP.p_date = TO_DATE('30-MAR-20', 'DD-MON-YY')
+    ) as Closing_Prices
+on Current_Funds.symbol = Closing_Prices.symbol
+ORDER BY price DESC
+
