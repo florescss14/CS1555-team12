@@ -282,22 +282,66 @@ public class team12 {
 	private static void buyShares(Statement st, Connection conn, Scanner reader) {
 		// TODO Auto-generated method stub
 		print("Enter symbol of fund to buy: ");
-		String sym = reader.nextLine();
-		print("Enter the number of shares to buy: ");
-		int n = reader.nextInt();
-		try{
-			statement = conn.prepareStatement("select buy_shares(?, ?, ?)");
-			statement.setString(1, userLogin);
-			statement.setString(2, sym);
-			statement.setInt(3, n);
-			ResultSet res = statement.executeQuery();
-			if(res.next()){
-				print("\n Successfully bought " + n + " shares.");
-			}else{
-				print("\n Error buying shares. Check your balance?");
+		String sym = (reader.nextLine()).toUpperCase();
+		print("Do you want to buy shares by number of shares (1), or by dollar amount (2)?");
+		int pref = reader.nextInt();
+		if(pref == 2){
+			print("Enter the amount you want to spend in the format XXXX.XX: ");
+			Double amt = reader.nextDouble();
+			try{
+				//get balance, make sure user has enough
+				statement = conn.prepareStatement("select balance from customer where login = ?");
+				statement.setString(1, userLogin);
+				ResultSet res = statement.executeQuery();
+				res.next();
+				if(amt > res.getDouble(1)){
+					print("Error: balance too low");
+					return;
+				}
+				//calculate how many shares user can buy
+				Double price;
+				statement = conn.prepareStatement("SELECT CLOSING_PRICE.price FROM CLOSING_PRICE WHERE CLOSING_PRICE.symbol = ? ORDER BY CLOSING_PRICE.p_date DESC LIMIT 1");
+				statement.setString(1, sym);
+				res = statement.executeQuery();
+				res.next();
+				price = res.getDouble(1);
+				int shares_to_buy = (int)Math.floor(amt/price);
+				if(shares_to_buy == 0){
+					print("Error: not enough money");
+					return;
+				}
+				//buy shares
+				statement = conn.prepareStatement("select buy_shares(?, ?, ?)");
+				statement.setString(1, userLogin);
+				statement.setString(2, sym);
+				statement.setInt(3, shares_to_buy);
+				res = statement.executeQuery();
+				if(res.next()){
+					print("Successfully bought " + shares_to_buy + " shares.");
+				}else{
+					print("Error buying shares. Check your balance?");
+				}
+			}catch(SQLException e){
+				e.printStackTrace();
 			}
-		}catch(SQLException e){
-			e.printStackTrace();
+
+		}else if(pref == 1){
+			print("Enter the number of shares to buy: ");
+			int n = reader.nextInt();
+			try{
+				statement = conn.prepareStatement("select buy_shares(?, ?, ?)");
+				statement.setString(1, userLogin);
+				statement.setString(2, sym);
+				statement.setInt(3, n);
+				ResultSet res = statement.executeQuery();
+				if(res.next()){
+					print("\n Successfully bought " + n + " shares.");
+				}else{
+					print("\n Error buying shares. Check your balance?");
+				}
+			}catch(SQLException e){
+				e.printStackTrace();
+			}
 		}
 	}
 
