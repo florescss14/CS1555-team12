@@ -715,7 +715,7 @@ AS
         END;
     $$ LANGUAGE plpgsql;
 
-SELECT search_funds('stock');
+--SELECT search_funds('stock');
 
 
 --Task 5
@@ -761,5 +761,33 @@ CREATE OR REPLACE PROCEDURE buy_shares(log varchar(10), symb varchar(20), n_shar
 --CALL buy_shares('mike', 'RE', 1);
 
 --buy $$ of shares
-
+CREATE OR REPLACE PROCEDURE buy_shares(log varchar(10), symb varchar(20), amount decimal(10, 2)) AS
+    $$
+    DECLARE
+        price decimal(10, 2);
+        bal decimal(10, 2);
+        n_shares integer;
+        cost decimal(10, 2);
+    BEGIN
+        SELECT closing_price.price FROM closing_price
+            WHERE closing_price.symbol = symb
+            ORDER BY closing_price.p_date DESC
+            FETCH FIRST ROW ONLY INTO price;
+        SELECT balance FROM customer WHERE login = log INTO bal;
+        SELECT FLOOR(amount/price) INTO n_shares;
+        SELECT price * n_shares INTO cost;
+        IF (n_shares > 0) THEN
+            UPDATE customer
+                SET balance = (balance - cost)
+                WHERE login = log;
+            INSERT INTO owns(login, symbol, shares)
+                VALUES (log, symb, n_shares)
+                ON CONFLICT ON CONSTRAINT OWNS_PK DO
+                UPDATE SET shares = owns.shares + n_shares
+                    WHERE owns.login = log AND owns.symbol = symb;
+            ELSE
+                RAISE EXCEPTION 'not enough money to buy shares';
+        end if;
+    end
+    $$ LANGUAGE plpgsql;
 --Task 8

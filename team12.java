@@ -167,7 +167,7 @@ public class team12 {
 		// TODO Auto-generated method stub
 		print("Enter symbol of fund to buy: ");
 		String sym = reader.nextLine();
-		print("Enter")
+		print("Enter");
 	}
 
 	private static void depositAmount(Statement st, Connection conn, Scanner reader) {
@@ -183,16 +183,17 @@ public class team12 {
 		String k2 = reader.nextLine();
 
 		try{
+			ResultSet funds;
 			if(k2.length() > 1){
 				statement = conn.prepareStatement("select search_funds(?, ?)");
 				statement.setString(1, k1);
 				statement.setString(2, k2);
-				ResultSet funds = statement.executeQuery();
+				funds = statement.executeQuery();
 				conn.commit();
 			}else{
 				statement = conn.prepareStatement("select search_funds(?)");
 				statement.setString(1, k1);
-				ResultSet funds = statement.executeQuery();
+				funds = statement.executeQuery();
 				conn.commit();
 			}
 			//print funds
