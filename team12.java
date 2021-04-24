@@ -172,14 +172,47 @@ public class team12 {
 
 	private static void sellShares(Statement st, Connection conn, Scanner reader) {
 		// TODO Auto-generated method stub
-		
+		print("Enter symbol of fund to sell: ");
+		String sym = reader.nextLine();
+		print("Enter the number of shares to sell: ");
+		int n = reader.nextInt();
+
+		try{
+			statement = conn.prepareStatement("select sell_shares(?, ?, ?)");
+			statement.setString(1, userLogin);
+			statement.setString(2, sym);
+			statement.setInt(3, n);
+			ResultSet res = statement.executeQuery();
+			if(res.next()){
+				print("\n Successfully sold " + n + " shares.\n");
+			} else{
+				print("\n Error selling shares. Are you sure you have enough shares to sell?\n");
+			}
+		}catch (SQLException e){
+			e.printStackTrace();
+		}
 	}
 
 	private static void buyShares(Statement st, Connection conn, Scanner reader) {
 		// TODO Auto-generated method stub
 		print("Enter symbol of fund to buy: ");
 		String sym = reader.nextLine();
-		print("Enter");
+		print("Enter the number of shares to buy: ");
+		int n = reader.nextInt();
+		try{
+			statement = conn.prepareStatement("select buy_shares(?, ?, ?)");
+			statement.setString(1, userLogin);
+			statement.setString(2, sym);
+			statement.setInt(3, n);
+			ResultSet res = statement.executeQuery();
+			if(res.next()){
+				print("\n Successfully bought " + n + " shares.\n");
+			}else{
+				print("\n Error buying shares. Check your balance?\n");
+			}
+		}catch(SQLException e){
+			e.printStackTrace();
+		}
 	}
 
 	private static void depositAmount(Statement st, Connection conn, Scanner reader) {

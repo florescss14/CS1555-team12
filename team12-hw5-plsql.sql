@@ -726,7 +726,7 @@ $$ LANGUAGE plpgsql;
 
 
 
-
+DROP PROCEDURE buy_shares(log varchar(10), symb varchar(20), amount decimal(10, 2));
 CREATE OR REPLACE PROCEDURE buy_shares(log varchar(10), symb varchar(20), amount decimal(10, 2)) AS
     $$
     DECLARE
@@ -833,13 +833,13 @@ BEGIN
 
     --update OWNS
     --delete entry if cust sells all shares
-    IF customer_shares == sell_shares.number_of_shares THEN
-        DELETE FROM OWNS
-        WHERE OWNS.symbol = sell_shares.symbol AND OWNS.login = sell_shares.login;
+    IF customer_shares = sell_shares.number_of_shares THEN
+        DELETE FROM OWNS AS o
+        WHERE o.symbol = sell_shares.symbol AND o.login = sell_shares.login;
     ELSE
         --modify entry
         UPDATE OWNS
-        SET OWNS.shares = OWNS.shares - number_of_shares
+        SET shares = shares - number_of_shares
         WHERE OWNS.symbol = sell_shares.symbol AND OWNS.login = sell_shares.login;
     end if;
 
@@ -852,6 +852,7 @@ BEGIN
 END;
 $$ LANGUAGE PLPGSQL;
 
+--SELECT sell_shares('andrew', 'RE', 1);
 
 --Task 8
                                                                                                
