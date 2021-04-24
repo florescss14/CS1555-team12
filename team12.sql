@@ -536,7 +536,7 @@ FROM mutual_fund
 WHERE description LIKE CONCAT('%', 'bonds', '%')
   AND description LIKE CONCAT('%', 'term', '%');
 --test function: should be like: [STB, LTB]
-SELECT search_mutual_funds('bonds', 'term');
+--SELECT search_mutual_funds('bonds', 'term');
 
 --Question 3:
 CREATE OR REPLACE PROCEDURE deposit_for_investment(login varchar(10), deposit decimal(10, 2))
@@ -1069,7 +1069,7 @@ as
     end;
 $$ LANGUAGE plpgsql;
 
-DROP PROCEDURE buy_shares(log varchar(10), symb varchar(20), amount decimal(10, 2));
+
 CREATE OR REPLACE PROCEDURE buy_shares(log varchar(10), symb varchar(20), amount decimal(10, 2)) AS
     $$
     DECLARE
