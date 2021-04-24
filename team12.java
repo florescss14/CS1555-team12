@@ -20,7 +20,7 @@ public class team12 {
         Scanner reader = new Scanner(System.in);
         
         //CHANGE PW (2nd arg)
-        props.setProperty("password", "Realmadrid14*");
+        props.setProperty("password", "pass");
         
         Connection conn = DriverManager.getConnection(url, props);
 
