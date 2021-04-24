@@ -716,3 +716,32 @@ AS
     $$ LANGUAGE plpgsql;
 
 --SELECT search_funds('stock', 'dogecoin');
+
+
+--Task 5
+CREATE OR REPLACE PROCEDURE deposit_for_investment(amount decimal(10, 2)) AS
+    $$
+    BEGIN
+
+    end;
+    $$ LANGUAGE plpgsql;
+
+
+--Task 6
+--buy N shares
+CREATE OR REPLACE PROCEDURE buy_shares(symb varchar(20), n_shares integer) AS
+    $$
+    DECLARE
+        price decimal(10, 2);
+        cost decimal(10, 2);
+    BEGIN
+        SELECT closing_price.price FROM closing_price
+            WHERE closing_price.symbol = symb
+            ORDER BY closing_price.date
+            FETCH FIRST ROW ONLY INTO price;
+        SELECT price * n_shares INTO cost;
+        IF
+    end;
+    $$ LANGUAGE plpgsql;
+
+--Task 8
