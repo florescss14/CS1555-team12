@@ -121,6 +121,22 @@ CREATE TRIGGER  price_jump
     execute function price_jump_helper();
 
 
+CREATE or replace function recent_prices(input_date date)
+returns table(symbol varchar(20), price decimal(10, 2))
+as $$
+    begin
+
+    return query(
+    select t.symbol, t.price from( --Gets the most recent prices
+                        select CP.symbol, CP.price, row_number() over(partition by CP.symbol order by CP.symbol) as rn
+                            from closing_price CP
+                            where CP.p_date <= input_date
+                            order by p_date desc) t
+                    where rn = 1);
+    end;
+    $$ language plpgsql;
+
+
 
 --Question 2:
 DROP FUNCTION IF EXISTS search_mutual_funds(keyword_1 varchar(30), keyword_2 varchar(30));
@@ -670,9 +686,8 @@ as
                     where mutual_fund.c_date <= s_date
                     ) as CF
                 join(
-                    select CP.symbol, CP.price
-                    from closing_price CP
-                    where CP.p_date = s_date
+                    select RP.symbol, RP.price
+                    from recent_prices(s_date) RP
                     ) as Closing_Prices
                 on CF.symbol = Closing_Prices.symbol
                 ORDER BY price DESC) as curr
@@ -686,7 +701,7 @@ as
     end;
     $$ Language plpgsql;
 
---select * from mutual_funds_on_date(to_date('30-03-20','DD-MM-YY'), 'mike');
+select * from mutual_funds_on_date(to_date('30-03-20','DD-MM-YY'), 'mike');
 
 CREATE OR REPLACE FUNCTION customer_owns(input_login varchar(10))
 returns table(symbol varchar(20), name varchar(30), description varchar(100),
@@ -724,3 +739,56 @@ AS
     $$ LANGUAGE plpgsql;
 
 --SELECT search_funds('stock', 'dogecoin');
+
+
+--Task #12: Show portfolio
+create or replace function show_portfolio(input_login varchar(10))
+returns table()
+as
+$$
+    begin
+       return query(
+
+
+       )
+    end;
+$$ language plpgsql;
+
+create or replace function total_value_of_portfolio(input_login varchar(10))
+returns decimal (10,2)
+as
+$$
+    DECLARE
+        total decimal(10,2):= 0;
+        rec record;
+    begin
+    FOR rec in SELECT * FROM owns_with_price(input_login) LOOP
+        total:= total + (rec.shares * rec.current_price);
+    END LOOP;
+        return total;
+    end;
+$$language plpgsql;
+
+select total_value_of_portfolio('mike');
+
+create or replace function owns_with_price(input_login varchar(10))
+returns table(login  varchar(10), symbol varchar(20), shares integer, current_price decimal(10,2))
+as
+$$
+    DECLARE
+        c_date date;
+    begin
+    select p_date into c_date from mutual_date order by p_date desc limit 1;
+    raise notice 'Date = %',c_date;
+    return query(
+        select owns.symbol, owns.symbol, owns.shares, RP.price from(
+            select *
+            from owns
+            where input_login = owns.login)owns join recent_prices(c_date)RP
+        on owns.symbol = RP.symbol
+    );
+    end;
+$$language plpgsql;
+
+select * from owns_with_price('mike')
+
