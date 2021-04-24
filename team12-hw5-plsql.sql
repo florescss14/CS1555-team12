@@ -488,7 +488,7 @@ $$ LANGUAGE plpgsql;
 DROP DOMAIN IF EXISTS EMAIL_DOMAIN CASCADE;
 CREATE DOMAIN EMAIL_DOMAIN AS varchar(30) CHECK (VALUE ~ '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$');
 CREATE OR REPLACE PROCEDURE add_customer(login varchar(10), name varchar(20), email EMAIL_DOMAIN,
-                                            address  varchar(30), password varchar(10), balance  decimal(10, 2))
+                                            address  varchar(30), password varchar(10), balance decimal(10, 2))
 as
 $$
 declare
@@ -624,13 +624,14 @@ $$
         return query(
             select customer.name, customer.balance::decimal(10,2), sum.shares::integer
             from customer
-            join(
+            left join(
             select owns.login, sum(owns.shares) as shares
             from owns
             where input_login = owns.login
             group by owns.login
                 ) sum
             on customer.login = sum.login
+            where input_login = customer.login
         );
     end;
 $$LANGUAGE plpgsql;
