@@ -913,7 +913,10 @@ $$
     end;
 $$ LANGUAGE PLPGSQL;
                                           
-                         
+--task 9
+create or replace view predicted as
+    select login,action,amount-num_shares*getRecentPrice(symbol) as difference, num_shares*getRecentPrice(symbol) as predicted
+    from trxlog where action != 'deposit';                         
 
 
 --Task #10: Change allocation preference
