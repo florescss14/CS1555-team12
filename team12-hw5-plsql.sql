@@ -736,6 +736,7 @@ CREATE OR REPLACE PROCEDURE buy_shares(log varchar(10), symb varchar(20), n_shar
         price decimal(10, 2);
         cost decimal(10, 2);
         bal decimal(10, 2);
+        buy_date date;
     BEGIN
         SELECT closing_price.price FROM closing_price
             WHERE closing_price.symbol = symb
@@ -743,6 +744,7 @@ CREATE OR REPLACE PROCEDURE buy_shares(log varchar(10), symb varchar(20), n_shar
             FETCH FIRST ROW ONLY INTO price;
         SELECT price * n_shares INTO cost;
         SELECT balance FROM customer WHERE login = log INTO bal;
+        SELECT p_date FROM mutual_date FETCH FIRST ROW ONLY into buy_date;
         IF (cost < bal) THEN
             UPDATE customer
                 SET balance = (balance - cost)
@@ -752,6 +754,7 @@ CREATE OR REPLACE PROCEDURE buy_shares(log varchar(10), symb varchar(20), n_shar
                 ON CONFLICT ON CONSTRAINT OWNS_PK DO
                 UPDATE SET shares = owns.shares + n_shares
                     WHERE owns.login = log AND owns.symbol = symb;
+            INSERT INTO trxlog VALUES (DEFAULT, log, symb, buy_date, 'buy', n_shares, price, (price * n_shares));
         ELSE
             RAISE EXCEPTION 'insufficient balance';
         end if;
@@ -768,12 +771,14 @@ CREATE OR REPLACE PROCEDURE buy_shares(log varchar(10), symb varchar(20), amount
         bal decimal(10, 2);
         n_shares integer;
         cost decimal(10, 2);
+        buy_date date;
     BEGIN
         SELECT closing_price.price FROM closing_price
             WHERE closing_price.symbol = symb
             ORDER BY closing_price.p_date DESC
             FETCH FIRST ROW ONLY INTO price;
         SELECT balance FROM customer WHERE login = log INTO bal;
+        SELECT p_date FROM mutual_date FETCH FIRST ROW ONLY into buy_date;
         SELECT FLOOR(amount/price) INTO n_shares;
         SELECT price * n_shares INTO cost;
         IF (n_shares > 0) THEN
@@ -785,9 +790,11 @@ CREATE OR REPLACE PROCEDURE buy_shares(log varchar(10), symb varchar(20), amount
                 ON CONFLICT ON CONSTRAINT OWNS_PK DO
                 UPDATE SET shares = owns.shares + n_shares
                     WHERE owns.login = log AND owns.symbol = symb;
+             INSERT INTO trxlog VALUES (DEFAULT, log, symb, buy_date, 'buy', n_shares, price, (price * n_shares));
             ELSE
                 RAISE EXCEPTION 'not enough money to buy shares';
         end if;
     end
     $$ LANGUAGE plpgsql;
+CALL buy_shares('mike', 'RE', 100.00);
 --Task 8
