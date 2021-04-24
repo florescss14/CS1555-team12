@@ -531,7 +531,7 @@ as
     end;
     $$ Language plpgsql;
 
-select customer_balance_and_shares();
+--select * from customer_balance_and_shares();
 
 --Task #3: Show mutual funds sorted by prices on a date
 CREATE OR REPLACE FUNCTION mutual_funds_on_date(s_date date, login varchar(10))

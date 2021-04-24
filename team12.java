@@ -184,7 +184,24 @@ public class team12 {
 	}
 
 	private static void showFundsByName(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
+		try {
+			statement = conn.prepareStatement("select * from customer_balance_and_shares();");
+			ResultSet res = statement.executeQuery();
+			conn.commit();
+			print("Symbol, Name, Description, Category, Date Founded:");
+			while(res.next()){
+				System.out.print(res.getString(1) + ", ");    //First Column
+				System.out.print(res.getString(2) + ", ");    //Second Column
+				System.out.print(res.getString(3) + ", ");    //Third Column
+				System.out.print(res.getString(4) + ", ");    //Fourth Column
+				System.out.println(res.getString(5));    //Fifth Column
+			}
+			System.out.println();
+			
+		} catch (SQLException e) {
+			
+			e.printStackTrace();
+		}
 		
 	}
 
@@ -457,7 +474,7 @@ public class team12 {
 			print("8: Show ROI (return of investment)");
 			print("9: Predict the gain or loss of the customer’s transactions");
 			print("10: Change allocation preference");
-			print("11: Rank the customer’s allocations");
+			print("11: Rank the customer\'s allocations");
 			print("12: Show portfolio [proc]");
     	}
     	print("0: Exit");
