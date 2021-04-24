@@ -2,6 +2,7 @@
 import java.sql.*;
 import java.sql.Types;
 import java.io.*;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Scanner;
@@ -181,7 +182,59 @@ public class team12 {
 	}
 
 	private static void predict(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
+				try {
+
+			statement = conn.prepareStatement("select * from predicted where login = ?;");
+			statement.setString(1, userLogin);
+			ResultSet ROI = statement.executeQuery();
+			while(ROI.next()){
+				String a = ROI.getString(2);
+				int b = (int) Double.parseDouble(ROI.getString(3));
+				
+				int c = Integer.parseInt(ROI.getString(4));
+				
+				if(a.equals("buy")) {
+					if(b<0) {
+						System.out.println("Difference: " + b + " Predicted: " + c + " Status: loss");
+					}else if(b>0){
+						System.out.println("Difference: " + b + " Predicted: " + c + " Status: profit");
+					}else{
+						System.out.println("Difference: " + b + " Predicted: " + c + " Status: hold");
+					}
+				}else if(a.equals("sell")) {
+					if(b<0) {
+						System.out.println("Difference: " + b + " Predicted: " + c + " Status: profit");
+					}else if(b>0){
+						System.out.println("Difference: " + b + " Predicted: " + c + " Status: loss");
+					}else{
+						System.out.println("Difference: " + b + " Predicted: " + c + " Status: hold");
+					}
+				}else {
+					System.out.println("Unexpected error");
+				}
+			}
+		} catch (SQLException e) {
+			System.out.println("Unexpected error");
+			e.printStackTrace();
+		}
+	}
+
+	private static void showROI(Statement st, Connection conn, Scanner reader, String userLogin) {
+		try {
+			statement = conn.prepareStatement("select show_roi(?);");
+			statement.setString(1, userLogin);
+			ResultSet ROI = statement.executeQuery();
+			while(ROI.next()){
+				String a = ROI.getString(1);
+				if(a.length()==0)
+					print("You have no investments!");
+				else
+					print("\n"+a+"\n");
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 	}
 
@@ -205,19 +258,65 @@ public class team12 {
 
 	private static void sellShares(Statement st, Connection conn, Scanner reader) {
 		// TODO Auto-generated method stub
-		
+		print("Enter symbol of fund to sell: ");
+		String sym = reader.nextLine();
+		print("Enter the number of shares to sell: ");
+		int n = reader.nextInt();
+
+		try{
+			statement = conn.prepareStatement("select sell_shares(?, ?, ?)");
+			statement.setString(1, userLogin);
+			statement.setString(2, sym);
+			statement.setInt(3, n);
+			ResultSet res = statement.executeQuery();
+			if(res.next()){
+				print("\n Successfully sold " + n + " shares.\n");
+			} else{
+				print("\n Error selling shares. Are you sure you have enough shares to sell?\n");
+			}
+		}catch (SQLException e){
+			e.printStackTrace();
+		}
 	}
 
 	private static void buyShares(Statement st, Connection conn, Scanner reader) {
 		// TODO Auto-generated method stub
 		print("Enter symbol of fund to buy: ");
 		String sym = reader.nextLine();
-		print("Enter");
+		print("Enter the number of shares to buy: ");
+		int n = reader.nextInt();
+		try{
+			statement = conn.prepareStatement("select buy_shares(?, ?, ?)");
+			statement.setString(1, userLogin);
+			statement.setString(2, sym);
+			statement.setInt(3, n);
+			ResultSet res = statement.executeQuery();
+			if(res.next()){
+				print("\n Successfully bought " + n + " shares.\n");
+			}else{
+				print("\n Error buying shares. Check your balance?\n");
+			}
+		}catch(SQLException e){
+			e.printStackTrace();
+		}
 	}
 
 	private static void depositAmount(Statement st, Connection conn, Scanner reader) {
 		// TODO Auto-generated method stub
-		
+		print("Enter dollar amount to deposit in the form XXXX.XX: ");
+		Double amt = Double.parseDouble(reader.nextLine());
+		BigDecimal amtd = new BigDecimal(amt);
+		try{
+			statement = conn.prepareStatement("call deposit_for_investment(?, ?)");
+			statement.setString(1, userLogin);
+			statement.setBigDecimal(2, amtd);
+			statement.executeUpdate();
+			conn.commit();
+			print("Successfully deposited " + amt);
+		}catch (SQLException e){
+			e.printStackTrace();
+		}
+
 	}
 
 	private static void searchForFund(Statement st, Connection conn, Scanner reader) {
@@ -242,9 +341,11 @@ public class team12 {
 				conn.commit();
 			}
 			//print funds
+			print("Funds matching your query: ");
 			while(funds.next()){
 				print(funds.getString(1));
 			}
+			print("");
 		} catch (SQLException e){
 			e.printStackTrace();
 		}
@@ -572,7 +673,7 @@ public class team12 {
 			print("6: Buy shares");
 			print("7: Sell shares");
 			print("8: Show ROI (return of investment)");
-			print("9: Predict the gain or loss of the customer’s transactions");
+			print("9: Predict the gain or loss of the customer\'s transactions");
 			print("10: Change allocation preference");
 			print("11: Rank the customer\'s allocations");
 			print("12: Show portfolio [proc]");
