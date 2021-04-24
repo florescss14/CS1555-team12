@@ -148,7 +148,59 @@ public class team12 {
 	}
 
 	private static void predict(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
+				try {
+
+			statement = conn.prepareStatement("select * from predicted where login = ?;");
+			statement.setString(1, userLogin);
+			ResultSet ROI = statement.executeQuery();
+			while(ROI.next()){
+				String a = ROI.getString(2);
+				int b = (int) Double.parseDouble(ROI.getString(3));
+				
+				int c = Integer.parseInt(ROI.getString(4));
+				
+				if(a.equals("buy")) {
+					if(b<0) {
+						System.out.println("Difference: " + b + " Predicted: " + c + " Status: loss");
+					}else if(b>0){
+						System.out.println("Difference: " + b + " Predicted: " + c + " Status: profit");
+					}else{
+						System.out.println("Difference: " + b + " Predicted: " + c + " Status: hold");
+					}
+				}else if(a.equals("sell")) {
+					if(b<0) {
+						System.out.println("Difference: " + b + " Predicted: " + c + " Status: profit");
+					}else if(b>0){
+						System.out.println("Difference: " + b + " Predicted: " + c + " Status: loss");
+					}else{
+						System.out.println("Difference: " + b + " Predicted: " + c + " Status: hold");
+					}
+				}else {
+					System.out.println("Unexpected error");
+				}
+			}
+		} catch (SQLException e) {
+			System.out.println("Unexpected error");
+			e.printStackTrace();
+		}
+	}
+
+	private static void showROI(Statement st, Connection conn, Scanner reader, String userLogin) {
+		try {
+			statement = conn.prepareStatement("select show_roi(?);");
+			statement.setString(1, userLogin);
+			ResultSet ROI = statement.executeQuery();
+			while(ROI.next()){
+				String a = ROI.getString(1);
+				if(a.length()==0)
+					print("You have no investments!");
+				else
+					print("\n"+a+"\n");
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 	}
 
