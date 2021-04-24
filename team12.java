@@ -150,6 +150,7 @@ public class team12 {
 			statement = conn.prepareStatement("select * from total_value_of_portfolio(?)");
 			statement.setString(1, userLogin);
 			ResultSet total = statement.executeQuery();
+			total.next();
 			print(total.getString(1));
 		} catch (SQLException e) {
 			e.printStackTrace();
