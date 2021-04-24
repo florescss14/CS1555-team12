@@ -827,3 +827,60 @@ $$ LANGUAGE PLPGSQL;
 
 
 --Task 8
+                                                                                               
+CREATE OR REPLACE FUNCTION get_roi_top(l varchar(10), s varchar(10))
+returns int as
+$$
+    declare
+        subtracted int = 0;
+        current int = 0;
+    begin
+        select coalesce(sum(amount),0) into subtracted
+            from trxlog
+                where trxlog.login = l and trxlog.symbol = s and action = 'sell';
+        select coalesce((shares*getRecentPrice(s)),0) into current
+            from owns
+            where owns.symbol = s and owns.login = l;
+
+        return current+subtracted-get_roi_bottom(l,s);
+    end;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION get_roi_bottom(l varchar(10), s varchar(10))
+returns int as
+$$
+    declare
+        added int = 0;
+    begin
+        select coalesce(sum(amount),0) into added
+            from trxlog
+                where trxlog.login = l and trxlog.symbol = s and action = 'buy';
+
+
+        return added;
+    end;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION show_roi(l varchar(10))
+returns varchar(100) as
+$$
+    DECLARE
+    curs1 refcursor;
+    row record;
+    output varchar(100);
+    n varchar(20);
+    BEGIN
+        open curs1 for select * from owns where login = l;
+        output = '';
+        loop
+            fetch curs1 into row;
+            exit when not found;
+            select name into n
+            from mutual_fund
+                where symbol = row.symbol;
+            output = output || row.symbol || ', '|| n || ' = '|| ((1.0*get_roi_top(l, row.symbol)/get_roi_bottom(l, row.symbol))::float4)||' ';
+        end loop;
+        raise notice 'ddd %',output;
+        return output;
+    end;
+$$ LANGUAGE PLPGSQL;
