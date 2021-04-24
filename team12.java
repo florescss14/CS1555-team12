@@ -236,9 +236,9 @@ public class team12 {
 			statement.setInt(3, n);
 			ResultSet res = statement.executeQuery();
 			if(res.next()){
-				print("\n Successfully sold " + n + " shares.\n");
+				print("\n Successfully sold " + n + " shares.");
 			} else{
-				print("\n Error selling shares. Are you sure you have enough shares to sell?\n");
+				print("\n Error selling shares. Are you sure you have enough shares to sell?");
 			}
 		}catch (SQLException e){
 			e.printStackTrace();
@@ -258,9 +258,9 @@ public class team12 {
 			statement.setInt(3, n);
 			ResultSet res = statement.executeQuery();
 			if(res.next()){
-				print("\n Successfully bought " + n + " shares.\n");
+				print("\n Successfully bought " + n + " shares.");
 			}else{
-				print("\n Error buying shares. Check your balance?\n");
+				print("\n Error buying shares. Check your balance?");
 			}
 		}catch(SQLException e){
 			e.printStackTrace();
