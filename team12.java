@@ -143,7 +143,41 @@ public class team12 {
 	}
 
 	private static void changePreference(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
+		boolean input_invalid = true;
+		String delimeters = ", |,";
+		String preferences[] = new String[1];
+		while(input_invalid){
+			print("Note: Please enter the percentages so they add up to 1.");
+			print("Enter Your Preferences (ex. MM, 05, RE, 0.5):");
+			preferences = reader.nextLine().split(delimeters);
+			if(preferences.length % 2 == 1){//Didn't enter percent for Mutual Fund
+				continue;
+			}
+			float percent = 0;
+			for(int i = 0; i < preferences.length; i++){
+				if(i % 2 == 1){
+					percent += Float.parseFloat(preferences[i]);
+				}
+			}
+			if(Math.abs(percent - 1) <= 0.001){
+				input_invalid = false;
+			}
+		}
+		StringBuilder sqlCall = new StringBuilder();
+		
+		sqlCall.append("call change_allocation_preferences(\'{");
+		for(int i = 0; i < preferences.length; i++){
+			sqlCall.append(preferences[i]);
+		}
+		sqlCall.append("}\', \'");
+		sqlCall.append(userLogin + "\');");
+		print(sqlCall.toString());
+		try {
+			statement = conn.prepareStatement(sqlCall.toString());
+			statement.executeUpdate();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 		
 	}
 

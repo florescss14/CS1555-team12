@@ -153,3 +153,9 @@ CREATE TABLE CLOSING_PRICE
 );
 
 select * from allocation where allocation.login = 'mike' order by p_date desc limit 1;
+
+select max(allocation_no) from allocation limit 1;
+
+select p_date from mutual_date order by p_date desc limit 1;
+
+select p_date from allocation where allocation.login = 'mike' order by p_date desc limit 1;
