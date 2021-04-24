@@ -1,4 +1,4 @@
-
+//run this with: java -cp "postgresql-42.2.18.jar;." team12.java abc1 password
 import java.sql.*;
 import java.sql.Types;
 import java.io.*;
@@ -12,15 +12,15 @@ public class team12 {
     public static void main(String args[]) throws
         SQLException, ClassNotFoundException, IOException {
         Class.forName("org.postgresql.Driver");
-        String url = "jdbc:postgresql://localhost:5432/";
+        String url = "jdbc:postgresql://class3.cs.pitt.edu:5432/";
         Properties props = new Properties();
-        props.setProperty("user", "postgres");
+        props.setProperty("user", args[0]);
         
         
         Scanner reader = new Scanner(System.in);
         
         //CHANGE PW (2nd arg)
-        props.setProperty("password", "pass");
+        props.setProperty("password", args[1]);
         
         Connection conn = DriverManager.getConnection(url, props);
 
