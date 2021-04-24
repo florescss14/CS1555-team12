@@ -208,9 +208,11 @@ public class team12 {
 				conn.commit();
 			}
 			//print funds
+			print("Funds matching your query: ");
 			while(funds.next()){
 				print(funds.getString(1));
 			}
+			print("");
 		} catch (SQLException e){
 			e.printStackTrace();
 		}
@@ -538,7 +540,7 @@ public class team12 {
 			print("6: Buy shares");
 			print("7: Sell shares");
 			print("8: Show ROI (return of investment)");
-			print("9: Predict the gain or loss of the customer’s transactions");
+			print("9: Predict the gain or loss of the customer\'s transactions");
 			print("10: Change allocation preference");
 			print("11: Rank the customer\'s allocations");
 			print("12: Show portfolio [proc]");
