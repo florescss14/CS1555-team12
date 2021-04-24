@@ -912,8 +912,6 @@ $$
     end;
 $$ LANGUAGE PLPGSQL;
                                           
-                         
-
 
 --Task #10: Change allocation preference
 Create or replace procedure change_allocation_preferences(strings text[], input_login varchar(10))
@@ -928,15 +926,19 @@ declare
     recent_alloc_date date;
     alloc_no integer;
 begin
-select into recent_alloc_date from allocation where allocation.login = input_login order by p_date desc limit 1;
+select max(allocation_no) into alloc_no from allocation limit 1;
+alloc_no:= alloc_no + 1;
+select p_date into recent_alloc_date from allocation where allocation.login = input_login order by p_date desc limit 1;
+raise notice 'recent alloc_date = %, c_date = %',recent_alloc_date, c_date;
+
 select p_date into c_date from mutual_date order by p_date desc limit 1;
 if recent_alloc_date = c_date then
     Raise Exception 'Already updated Allocations today. Come Back tomorrow!';
 else
-    insert into allocation(login, p_date)
-    values(input_login, c_date);
+    insert into allocation(allocation_no, login, p_date)
+    values(alloc_no, input_login, c_date);
 end if;
-
+    RAISE NOTICE 'Inserted into allocation: %, %, %', alloc_no, input_login, c_date;
 WHILE string_index <= number_strings LOOP
       --RAISE NOTICE '%', strings[string_index];
       if mod(string_index, 2) = 1 then
@@ -944,19 +946,19 @@ WHILE string_index <= number_strings LOOP
       else
         input_percent := strings[string_index];
 
-        select allocation_no into alloc_no from allocation where allocation.login = input_login;
+        --select allocation_no into alloc_no from allocation where allocation.login = input_login;
         insert into prefers(allocation_no, symbol, percentage)
         values(alloc_no, input_symbol, input_percent);
-        --insert into closing_price
-        --values(input_symbol, input_price, current_date);--TO_DATE(CURRENT_DATE, 'DD-MON-YY'));
 
-        RAISE NOTICE 'Inserted: %, %', input_symbol, input_price;
+        RAISE NOTICE 'Inserted: %, %', input_symbol, input_percent;
       end if;
       string_index = string_index + 1;
    END LOOP;
 
 end;
 $$ LANGUAGE plpgsql;
+
+call change_allocation_preferences('{MM,0.5,RE,0.5}', 'mike');
 
 --Task #12: Show portfolio
 create or replace function show_portfolio(input_login varchar(10))
