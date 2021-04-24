@@ -729,19 +729,34 @@ CREATE OR REPLACE PROCEDURE deposit_for_investment(amount decimal(10, 2)) AS
 
 --Task 6
 --buy N shares
-CREATE OR REPLACE PROCEDURE buy_shares(symb varchar(20), n_shares integer) AS
+
+CREATE OR REPLACE PROCEDURE buy_shares(log varchar(10), symb varchar(20), n_shares integer) AS
     $$
     DECLARE
         price decimal(10, 2);
         cost decimal(10, 2);
+        bal decimal(10, 2);
     BEGIN
         SELECT closing_price.price FROM closing_price
             WHERE closing_price.symbol = symb
-            ORDER BY closing_price.date
+            ORDER BY closing_price.p_date DESC
             FETCH FIRST ROW ONLY INTO price;
         SELECT price * n_shares INTO cost;
-        IF
-    end;
+        SELECT balance FROM customer WHERE login = log INTO bal;
+        IF (cost < bal) THEN
+            UPDATE customer
+                SET balance = (balance - cost)
+                WHERE login = log;
+            INSERT INTO owns(login, symbol, shares)
+                VALUES (log, symb, n_shares)
+                ON CONFLICT ON CONSTRAINT OWNS_PK DO
+                UPDATE SET shares = owns.shares + n_shares
+                    WHERE owns.login = log AND owns.symbol = symb;
+        ELSE
+            RAISE EXCEPTION 'insufficient balance';
+        end if;
+    end
     $$ LANGUAGE plpgsql;
 
+--CALL buy_shares('mike', 'RE', 1);
 --Task 8
