@@ -152,10 +152,23 @@ CREATE TABLE CLOSING_PRICE
     CONSTRAINT CLOSING_PRICE_CK CHECK ( price > 0)
 );
 
-select * from allocation where allocation.login = 'mike' order by p_date desc limit 1;
+select  sum(amount) as total
+            from trxlog
+                where trxlog.login = 'mike' and trxlog.symbol = 'MM' and action = 'buy';
 
-select max(allocation_no) from allocation limit 1;
+select trxlog.symbol, sum(amount) as total
+        from trxlog
+        where trxlog.login = 'mike'
+        and action = 'buy'
+        group by trxlog.symbol;
 
-select p_date from mutual_date order by p_date desc limit 1;
-
-select p_date from allocation where allocation.login = 'mike' order by p_date desc limit 1;
+select O2.symbol, O2.shares, O2.price, O2.cost, adj.cost, (O2.price - adj.cost) as yeild from(
+               select O.symbol, O.shares, O.price, C.cost from(
+                   select t.symbol, t.shares, (RP.price * t.shares) as price from(
+                   select * from customer_owns('mike')) as t
+                   join(select * from recent_prices(c_date)) as RP
+                   on t.symbol = RP.symbol) as O
+               join(select * from cost_for_user(input_login)) as C
+               on O.symbol = C.symbol) as O2
+           join(select * from sale_for_user(input_login)) as adj
+           on O2.symbol = adj.symbol
