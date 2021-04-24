@@ -1358,8 +1358,40 @@ returns float4 as
     $$ language plpgsql;
 
 --Task #12: Show portfolio
+Create or replace function cost_for_user(input_login varchar(10))
+returns table(symbol varchar(20), cost decimal(10,2))
+as $$
+    begin
+    return query (
+        select trxlog.symbol, sum(amount) as total
+        from trxlog
+        where trxlog.login = input_login
+        and action = 'buy'
+        group by trxlog.symbol
+    );
+    end;
+    $$language plpgsql;
+
+
+
+Create or replace function sale_for_user(input_login varchar(10))
+returns table(symbol varchar(20), cost decimal(10,2))
+as $$
+    begin
+    return query (
+        select trxlog.symbol, sum(amount) as total
+        from trxlog
+        where trxlog.login = input_login
+        and action = 'sell'
+        group by trxlog.symbol
+    );
+    end;
+    $$language plpgsql;
+
+
+
 create or replace function show_portfolio(input_login varchar(10))
-returns table(symbol varchar(20), shares integer, current_value decimal(10,2), cost (how_much paid for it), adjusted_cost , yeild)
+returns table(symbol varchar(20), shares integer, current_value decimal(10,2), cost decimal(10, 2), adjusted_cost decimal(10,2), yeild decimal(10,2))
 as
 $$
     DECLARE
@@ -1367,10 +1399,16 @@ $$
     begin
     select p_date into c_date from mutual_date order by p_date desc limit 1;
        return query(
-           select t.symbol, t.shares, RP.price from(
-           select * from customer_owns(input_login)) as t
-           join(select * from recent_prices(c_date)) as RP
-           on t.symbol = RP.symbol
+           select O2.symbol, O2.shares, O2.current_price, O2.cost, (O2.cost - adj.cost) as adjusted_cost, (O2.current_price - adjusted_cost) as yeild from(
+               select O.symbol, O.shares, O.current_price, C.cost from(
+                   select t.symbol, t.shares, (RP.price * t.shares) as current_price from(
+                   select * from customer_owns(input_login)) as t
+                   join(select * from recent_prices(c_date)) as RP
+                   on t.symbol = RP.symbol) as O
+               join(select * from cost_for_user(input_login)) as C
+               on O.symbol = C.symbol) as O2
+           left join(select * from sale_for_user(input_login)) as adj
+           on O2.symbol = adj.symbol
        );
     end;
 $$ language plpgsql;
@@ -1407,3 +1445,4 @@ $$
     );
     end;
 $$language plpgsql;
+

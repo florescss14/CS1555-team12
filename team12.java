@@ -133,7 +133,27 @@ public class team12 {
 	}
     
     private static void showPortfolio(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
+		try {
+			statement = conn.prepareStatement("select * from show_portfolio(?)");
+			statement.setString(1, userLogin);
+			ResultSet res = statement.executeQuery();
+			print("Mutual Fund, Number of Shares, Current Value, Cost Value, Adjusted Cost, Yield");
+			while(res.next()){
+				System.out.print(res.getString(1) + ", ");
+				System.out.print(res.getString(2) + ", ");
+				System.out.print(res.getString(3) + ", ");
+				System.out.print(res.getString(4) + ", ");
+				System.out.print(res.getString(5) + ", ");
+				System.out.println(res.getString(6));
+			}
+			System.out.print("Total Value of Portfolio: ");
+			statement = conn.prepareStatement("select * from total_value_of_portfolio(?)");
+			statement.setString(1, userLogin);
+			ResultSet total = statement.executeQuery();
+			print(total.getString(1));
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 		
 	}
 
@@ -150,7 +170,6 @@ public class team12 {
 				print(i++ +": Allocation "+ROI.getString(1) + " ROI: "+ ROI.getString(2));
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
