@@ -1,4 +1,125 @@
 -- Andrew Imredy api5, Ted Balashov thb46, Christopher Flores cwf24
+--TRIGGERS
+create or replace function getLowestPrice()
+returns int as
+$$
+    declare
+        x int = 0;
+        begin
+select min(price) into x from
+(select symbol, max(p_date) as p
+from closing_price
+group by symbol) x join closing_price on x.p = p_date;
+return x;
+end;
+ $$ language plpgsql;
+
+
+create or replace function getRecentPrice(s varchar(10))
+returns int as
+$$
+    declare
+        x int = 0;
+        begin
+
+        SELECT CLOSING_PRICE.price
+        INTO x
+        FROM CLOSING_PRICE
+        WHERE CLOSING_PRICE.symbol = s
+        ORDER BY CLOSING_PRICE.p_date DESC
+        LIMIT 1;
+        return x;
+end;
+ $$ language plpgsql;
+                                                    
+                                                    
+--TRIGGER 1 - price_initialization
+CREATE OR REPLACE FUNCTION price_initialization_helper()
+returns trigger as
+    $$
+    declare
+        s varchar(20);
+        d TIMESTAMP;
+    begin
+        select NEW.symbol into s;
+        select p_date into d from mutual_date;
+        insert into closing_price VALUES (s, getLowestPrice(), d);
+        return null;
+    end;
+$$ language plpgsql;
+
+CREATE TRIGGER price_initialization
+    AFTER INSERT ON mutual_fund
+    FOR EACH ROW
+    EXECUTE FUNCTION price_initialization_helper();
+
+--TRIGGER 2 - sell_rebalance                    
+                                                    
+create or replace function sell_rebalance_helper()
+returns trigger as
+    $$
+    declare
+        p int;
+        a int;
+        old int;
+        myLogin varchar(10);
+    begin
+        raise notice 'zyx' ;
+        if(new.action = 'sell') then
+        raise notice 'abc' ;
+        select NEW.price into p;
+        select NEW.num_shares into a;
+        select NEW.login into myLogin;
+        select balance into old from customer
+            where customer.login = login;
+        update customer set balance = (old+p*a) where customer.login = myLogin;
+        end if;
+        return null;
+
+    end;
+    $$ language plpgsql;
+
+CREATE TRIGGER sell_rebalance
+    AFTER INSERT ON trxlog
+    FOR EACH ROW
+    EXECUTE FUNCTION sell_rebalance_helper();
+                                                    
+--TRIGGER 3 - price_jump                                 
+
+create or replace function price_jump_helper()
+returns trigger as
+    $$
+    declare
+    x int;
+    curs1 refcursor;
+    row record;
+    myUser varchar(10);
+    begin
+        select getRecentPrice(new.symbol) into x;
+        if(new.price-x>=10) then
+            open curs1 for select * from owns;
+            loop
+                fetch curs1 into row;
+                exit when not found;
+                if(row.symbol = new.symbol) then
+                    select row.login into myUser;
+                    insert into trxlog values (DEFAULT, myUser, NULL, TO_DATE('29-MAR-20', 'DD-MON-YY'), 'sell', row.shares, new.price, (row.shares*new.price));
+                    delete from owns where symbol=new.symbol and login = row.login;
+                end if;
+            end loop;
+            close curs1;
+        end if;
+        return null;
+
+    end;
+    $$ language plpgsql;
+
+
+CREATE TRIGGER  price_jump
+    before insert on closing_price
+    for each row
+    execute function price_jump_helper();
+
 
 
 --Question 2:
