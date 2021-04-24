@@ -1378,15 +1378,17 @@ returns table(symbol varchar(20), cost decimal(10,2))
 as $$
     begin
     return query (
-        select trxlog.symbol, sum(amount) as total
-        from trxlog
-        where trxlog.login = input_login
-        and action = 'sell'
-        group by trxlog.symbol
+        select mutual_fund.symbol, coalesce(TRX.total, 0) from(
+            select trxlog.symbol, sum(amount) as total
+            from trxlog
+            where trxlog.login = input_login
+            and action = 'sell'
+            group by trxlog.symbol)TRX
+        right join mutual_fund
+        on mutual_fund.symbol = TRX.symbol
     );
     end;
     $$language plpgsql;
-
 
 
 create or replace function show_portfolio(input_login varchar(10))
@@ -1398,7 +1400,7 @@ $$
     begin
     select p_date into c_date from mutual_date order by p_date desc limit 1;
        return query(
-           select O2.symbol, O2.shares, O2.current_price, O2.cost, (O2.cost - adj.cost) as adjusted_cost, (O2.current_price - adjusted_cost) as yeild from(
+           select O2.symbol, O2.shares, O2.current_price, O2.cost, (O2.cost - adj.cost) as adjusted_cost, (O2.current_price - (O2.cost - adj.cost)) as yeild from(
                select O.symbol, O.shares, O.current_price, C.cost from(
                    select t.symbol, t.shares, (RP.price * t.shares) as current_price from(
                    select * from customer_owns(input_login)) as t
