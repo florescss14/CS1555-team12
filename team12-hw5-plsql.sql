@@ -536,15 +536,15 @@ as
 --Task #3: Show mutual funds sorted by prices on a date
 CREATE OR REPLACE FUNCTION mutual_funds_on_date(s_date date, login varchar(10))
 returns table(symbol varchar(20), name varchar(30), description varchar(100),
-                category CATEGORY_DOMAIN, c_date date)
+                category CATEGORY_DOMAIN, c_date date, price decimal(10, 2))
 as
     $$
     begin
         return query(
-            select Current_Funds.symbol as symbol, name, description, category, c_date, price from(
+            select Current_Funds.symbol as symbol, Current_Funds.name, Current_Funds.description, Current_Funds.category, Current_Funds.c_date, Closing_Prices.price from(
                 select *
                 from mutual_fund
-                where c_date <= s_date
+                where mutual_fund.c_date <= s_date
                 ) as Current_Funds
             join(
                 select CP.symbol, CP.price
@@ -556,6 +556,8 @@ as
         );
     end;
     $$ Language plpgsql;
+
+select * from mutual_funds_on_date(to_date('30-03-20','DD-MM-YY'), 'mike');
 
 CREATE OR REPLACE FUNCTION customer_owns(input_login varchar(10))
 returns table(symbol varchar(20), name varchar(30), description varchar(100),

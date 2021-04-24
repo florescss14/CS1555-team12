@@ -179,7 +179,22 @@ public class team12 {
 	}
 
 	private static void showFundsByPrice(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
+		print("Enter date (DD-MM-YYYY):");
+		String date = reader.nextLine();
+		
+		try {
+			statement = conn.prepareStatement("select * from mutual_funds_on_date(to_date(?,\'DD-MM-YY\'), ?);");
+			statement.setString(1, date);
+			statement.setString(2, userLogin);
+			ResultSet funds_on_date = statement.executeQuery();
+
+			conn.commit();
+			
+			
+		} catch (SQLException e) {
+			
+			e.printStackTrace();
+		}
 		
 	}
 
