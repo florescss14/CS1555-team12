@@ -44,14 +44,13 @@ CREATE TABLE MUTUAL_DATE
     CONSTRAINT S_DATE_PK PRIMARY KEY (p_date)
 );
 
-
 ---CREATING CUSTOMER TABLE
 -- Assume emails are unique -> no two users registered on the same site can share an email address
 CREATE TABLE CUSTOMER
 (
     login    varchar(10),
     name     varchar(20)    NOT NULL,
-    email    EMAIL_DOMAIN,
+    email    varchar(30),
     address  varchar(30),
     password varchar(10)    NOT NULL,
     balance  decimal(10, 2) NOT NULL,
@@ -859,7 +858,7 @@ $$ LANGUAGE plpgsql;
 DROP DOMAIN IF EXISTS EMAIL_DOMAIN CASCADE;
 CREATE DOMAIN EMAIL_DOMAIN AS varchar(30) CHECK (VALUE ~ '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$');
 CREATE OR REPLACE PROCEDURE add_customer(login varchar(10), name varchar(20), email EMAIL_DOMAIN,
-                                            address  varchar(30), password varchar(10), balance decimal(10, 2))
+                                            address varchar(30), password varchar(10), balance decimal(10, 2))
 as
 $$
 declare
@@ -871,7 +870,7 @@ begin
     end if;
 
 
-    insert into customer
+    insert into customer(login, name, email, address, password, balance)
     values(add_customer.login, add_customer.name, add_customer.email,
             add_customer.address, add_customer.password, input_balance);
 

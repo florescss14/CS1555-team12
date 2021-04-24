@@ -628,7 +628,7 @@ public class team12 {
 	}
 
 	private static void addCustomer(Statement st, Connection conn, Scanner reader) {
-		print("Please input Customer as follows: Login, Name, Email, Password, Initial Balance (optional)");
+		print("Please input Customer as follows: Login, Name, Email, Address, Password, Initial Balance (optional)");
 		String input = reader.nextLine();
 		String delimiters = ", |,";
 		String values[] = input.split(delimiters);
@@ -636,21 +636,23 @@ public class team12 {
 		String login = values[0];
         String name = values[1];
         String email = values[2];
-		String password = values[3];
+		String address = values[3];
+		String password = values[4];
 		String balance;
 		
 		
 		try {
-			statement = conn.prepareStatement("call add_customer(?, ?, ?, \'null\', ?, ?);");
+			statement = conn.prepareStatement("call add_customer(?, ?, ?, ?, ?, ?);");
 			statement.setString(1, login);
 			statement.setString(2, name);
 			statement.setString(3, email);
-			statement.setString(4, password);
-			if(values.length == 5){
-				balance = values[4];
-				statement.setString(5, balance);
+			statement.setString(4, address);
+			statement.setString(5, password);
+			if(values.length == 6){
+				balance = values[5];
+				statement.setBigDecimal(6, new BigDecimal(balance));
 			}else{
-				statement.setNull(5, Types.DECIMAL);
+				statement.setNull(6, Types.DECIMAL);
 			}
 			print(statement.toString());
 			statement.executeUpdate();
