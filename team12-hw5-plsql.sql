@@ -136,6 +136,7 @@ as $$
     end;
     $$ language plpgsql;
 
+select * from recent_prices(To_date('2020-04-04', 'YYYY-MM-DD'));
 
 
 --Question 2:
@@ -695,12 +696,18 @@ as
             select OW.login, OW.symbol, MF.name, MF.description, MF.category, MF.c_date, OW.shares from(
             select *
             from owns
-            where login = input_login) as OW
+            where owns.login = input_login) as OW
             join mutual_fund MF
             on OW.symbol = MF.symbol
         );
     end;
 $$ LANGUAGE plpgsql;
+
+
+--select * from customer_owns('mike');
+
+--select mutual_funds_on_date(TO_DATE('30-MAR-20', 'DD-MON-YY') ,'mike');
+
 
 DROP PROCEDURE buy_shares(log varchar(10), symb varchar(20), amount decimal(10, 2));
 CREATE OR REPLACE PROCEDURE buy_shares(log varchar(10), symb varchar(20), amount decimal(10, 2)) AS
@@ -893,6 +900,7 @@ create or replace view predicted as
     select login,action,amount-num_shares*getRecentPrice(symbol) as difference, num_shares*getRecentPrice(symbol) as predicted
     from trxlog where action != 'deposit';
 
+
 --Task #10: Change allocation preference
 Create or replace procedure change_allocation_preferences(strings text[], input_login varchar(10))
 as
@@ -996,9 +1004,41 @@ returns float4 as
     end;
     $$ language plpgsql;
 
---Task #12: Show portfolio
+--Task #12: Show portfolio functions
+Create or replace function cost_for_user(input_login varchar(10))
+returns table(symbol varchar(20), cost decimal(10,2))
+as $$
+    begin
+    return query (
+        select trxlog.symbol, sum(amount) as total
+        from trxlog
+        where trxlog.login = input_login
+        and action = 'buy'
+        group by trxlog.symbol
+    );
+    end;
+    $$language plpgsql;
+
+
+
+Create or replace function sale_for_user(input_login varchar(10))
+returns table(symbol varchar(20), cost decimal(10,2))
+as $$
+    begin
+    return query (
+        select trxlog.symbol, sum(amount) as total
+        from trxlog
+        where trxlog.login = input_login
+        and action = 'sell'
+        group by trxlog.symbol
+    );
+    end;
+    $$language plpgsql;
+
+
+
 create or replace function show_portfolio(input_login varchar(10))
-returns table(symbol varchar(20), shares integer, current_value decimal(10,2), cost (how_much paid for it), adjusted_cost , yeild)
+returns table(symbol varchar(20), shares integer, current_value decimal(10,2), cost decimal(10, 2), adjusted_cost decimal(10,2), yeild decimal(10,2))
 as
 $$
     DECLARE
@@ -1006,10 +1046,16 @@ $$
     begin
     select p_date into c_date from mutual_date order by p_date desc limit 1;
        return query(
-           select t.symbol, t.shares, RP.price from(
-           select * from customer_owns(input_login)) as t
-           join(select * from recent_prices(c_date)) as RP
-           on t.symbol = RP.symbol
+           select O2.symbol, O2.shares, O2.current_price, O2.cost, (O2.cost - adj.cost) as adjusted_cost, (O2.current_price - adjusted_cost) as yeild from(
+               select O.symbol, O.shares, O.current_price, C.cost from(
+                   select t.symbol, t.shares, (RP.price * t.shares) as current_price from(
+                   select * from customer_owns(input_login)) as t
+                   join(select * from recent_prices(c_date)) as RP
+                   on t.symbol = RP.symbol) as O
+               join(select * from cost_for_user(input_login)) as C
+               on O.symbol = C.symbol) as O2
+           left join(select * from sale_for_user(input_login)) as adj
+           on O2.symbol = adj.symbol
        );
     end;
 $$ language plpgsql;
