@@ -32,8 +32,6 @@ public class team12 {
 		userLogin = checkForPassword(st, conn, isAdmin, reader);
 
         try {
-        	//Not exactly sure what this does but it was stopping the code
-            //st.executeUpdate("delete from RESERVATION_DETAIL");
             while(operatingFlag) {
             	
             	boolean validInput = false;
@@ -154,8 +152,21 @@ public class team12 {
 	}
 
 	private static void showROI(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
-		
+		try {
+			statement = conn.prepareStatement( "select show_roi(?);");
+			statement.setString(1, userLogin);
+			ResultSet ROI = statement.executeQuery();
+			while(ROI.next()){
+				String a = ROI.getString(1);
+				if(a.length()==0)
+					print("You have no investments!");
+				else
+					print("\n"+a+"\n");
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	private static void sellShares(Statement st, Connection conn, Scanner reader) {
