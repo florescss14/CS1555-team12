@@ -2,6 +2,7 @@
 import java.sql.*;
 import java.sql.Types;
 import java.io.*;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Scanner;
@@ -183,7 +184,20 @@ public class team12 {
 
 	private static void depositAmount(Statement st, Connection conn, Scanner reader) {
 		// TODO Auto-generated method stub
-		
+		print("Enter dollar amount to deposit in the form XXXX.XX: ");
+		Double amt = Double.parseDouble(reader.nextLine());
+		BigDecimal amtd = new BigDecimal(amt);
+		try{
+			statement = conn.prepareStatement("call deposit_for_investment(?, ?)");
+			statement.setString(1, userLogin);
+			statement.setBigDecimal(2, amtd);
+			statement.executeUpdate();
+			conn.commit();
+			print("Successfully deposited " + amt);
+		}catch (SQLException e){
+			e.printStackTrace();
+		}
+
 	}
 
 	private static void searchForFund(Statement st, Connection conn, Scanner reader) {
