@@ -704,15 +704,18 @@ as
 select * from mutual_funds_on_date(to_date('30-03-20','DD-MM-YY'), 'mike');
 
 CREATE OR REPLACE FUNCTION customer_owns(input_login varchar(10))
-returns table(symbol varchar(20), name varchar(30), description varchar(100),
-                category CATEGORY_DOMAIN, c_date date)
+returns table(login varchar(10) ,symbol varchar(20), name varchar(30), description varchar(100),
+                category CATEGORY_DOMAIN, c_date date, shares integer)
 as
     $$
     begin
         return query (
+            select OW.login, OW.symbol, MF.name, MF.description, MF.category, MF.c_date, OW.shares from(
             select *
             from owns
-            where login = input_login
+            where login = input_login) as OW
+            join mutual_fund MF
+            on OW.symbol = MF.symbol
         );
     end;
 $$ LANGUAGE plpgsql;
@@ -741,18 +744,69 @@ AS
 --SELECT search_funds('stock', 'dogecoin');
 
 
---Task #12: Show portfolio
-create or replace function show_portfolio(input_login varchar(10))
-returns table()
+--Task #10: Change allocation preference
+Create or replace procedure change_allocation_preferences(strings text[], input_login varchar(10))
 as
 $$
+declare
+    number_strings integer := array_length(strings, 1);
+    string_index integer := 1;
+    input_symbol varchar(20);
+    input_percent decimal(3, 2);
+    c_date date;
+    recent_alloc_date date;
+    alloc_no integer;
+begin
+select into recent_alloc_date from allocation where allocation.login = input_login order by p_date desc limit 1;
+select p_date into c_date from mutual_date order by p_date desc limit 1;
+if recent_alloc_date = c_date then
+    Raise Exception 'Already updated Allocations today. Come Back tomorrow!';
+else
+    insert into allocation(login, p_date)
+    values(input_login, c_date);
+end if;
+
+WHILE string_index <= number_strings LOOP
+      --RAISE NOTICE '%', strings[string_index];
+      if mod(string_index, 2) = 1 then
+        input_symbol := strings[string_index];
+      else
+        input_percent := strings[string_index];
+
+        select allocation_no into alloc_no from allocation where allocation.login = input_login;
+        insert into prefers(allocation_no, symbol, percentage)
+        values(alloc_no, input_symbol, input_percent);
+        --insert into closing_price
+        --values(input_symbol, input_price, current_date);--TO_DATE(CURRENT_DATE, 'DD-MON-YY'));
+
+        RAISE NOTICE 'Inserted: %, %', input_symbol, input_price;
+      end if;
+      string_index = string_index + 1;
+   END LOOP;
+
+end;
+$$ LANGUAGE plpgsql;
+
+--Task #12: Show portfolio
+create or replace function show_portfolio(input_login varchar(10))
+returns table(symbol varchar(20), shares integer, current_value decimal(10,2), cost (how_much paid for it), adjusted_cost , yeild)
+as
+$$
+    DECLARE
+        c_date date;
     begin
+    select p_date into c_date from mutual_date order by p_date desc limit 1;
        return query(
-
-
-       )
+           select t.symbol, t.shares, RP.price from(
+           select * from customer_owns(input_login)) as t
+           join(select * from recent_prices(c_date)) as RP
+           on t.symbol = RP.symbol
+       );
     end;
 $$ language plpgsql;
+
+
+select * from show_portfolio('mike');
 
 create or replace function total_value_of_portfolio(input_login varchar(10))
 returns decimal (10,2)
@@ -771,15 +825,13 @@ $$language plpgsql;
 
 select total_value_of_portfolio('mike');
 
-create or replace function owns_with_price(input_login varchar(10))
-returns table(login  varchar(10), symbol varchar(20), shares integer, current_price decimal(10,2))
+create or replace function owns_with_price(input_login varchar(10)) returns table(login  varchar(10), symbol varchar(20), shares integer, current_price decimal(10,2))
 as
 $$
     DECLARE
         c_date date;
     begin
     select p_date into c_date from mutual_date order by p_date desc limit 1;
-    raise notice 'Date = %',c_date;
     return query(
         select owns.symbol, owns.symbol, owns.shares, RP.price from(
             select *

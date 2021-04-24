@@ -152,3 +152,4 @@ CREATE TABLE CLOSING_PRICE
     CONSTRAINT CLOSING_PRICE_CK CHECK ( price > 0)
 );
 
+select * from allocation where allocation.login = 'mike' order by p_date desc limit 1;
