@@ -32,8 +32,6 @@ public class team12 {
 		userLogin = checkForPassword(st, conn, isAdmin, reader);
 
         try {
-        	//Not exactly sure what this does but it was stopping the code
-            //st.executeUpdate("delete from RESERVATION_DETAIL");
             while(operatingFlag) {
             	
             	boolean validInput = false;
@@ -154,8 +152,21 @@ public class team12 {
 	}
 
 	private static void showROI(Statement st, Connection conn, Scanner reader) {
-		// TODO Auto-generated method stub
-		
+		try {
+			statement = conn.prepareStatement( "select show_roi(?);");
+			statement.setString(1, userLogin);
+			ResultSet ROI = statement.executeQuery();
+			while(ROI.next()){
+				String a = ROI.getString(1);
+				if(a.length()==0)
+					print("You have no investments!");
+				else
+					print("\n"+a+"\n");
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	private static void sellShares(Statement st, Connection conn, Scanner reader) {
@@ -165,7 +176,9 @@ public class team12 {
 
 	private static void buyShares(Statement st, Connection conn, Scanner reader) {
 		// TODO Auto-generated method stub
-		
+		print("Enter symbol of fund to buy: ");
+		String sym = reader.nextLine();
+		print("Enter");
 	}
 
 	private static void depositAmount(Statement st, Connection conn, Scanner reader) {
@@ -175,7 +188,32 @@ public class team12 {
 
 	private static void searchForFund(Statement st, Connection conn, Scanner reader) {
 		// TODO Auto-generated method stub
-		
+		print("Enter a keyword to search for: ");
+		String k1 = reader.nextLine();
+		print("Enter a second keyword (optional, or just press enter): ");
+		String k2 = reader.nextLine();
+
+		try{
+			ResultSet funds;
+			if(k2.length() > 1){
+				statement = conn.prepareStatement("select search_funds(?, ?)");
+				statement.setString(1, k1);
+				statement.setString(2, k2);
+				funds = statement.executeQuery();
+				conn.commit();
+			}else{
+				statement = conn.prepareStatement("select search_funds(?)");
+				statement.setString(1, k1);
+				funds = statement.executeQuery();
+				conn.commit();
+			}
+			//print funds
+			while(funds.next()){
+				print(funds.getString(1));
+			}
+		} catch (SQLException e){
+			e.printStackTrace();
+		}
 	}
 
 	private static void showFundsByPrice(Statement st, Connection conn, Scanner reader) {

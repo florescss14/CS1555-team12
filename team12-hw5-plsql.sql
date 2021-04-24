@@ -628,7 +628,8 @@ LANGUAGE plpgsql;
 
 --CALL set_current_date(TO_DATE('01-01-2000', 'DD-MM-YYYY'));
 
---Customer Tasks
+--*****************Customer Tasks*************************************************************************************************
+
 --Task #1: Show the customer’s balance and total number of shares
 CREATE OR REPLACE FUNCTION customer_balance_and_shares(input_login varchar(10))
 returns table (name varchar(20), balance  decimal(10, 2), shares integer)
@@ -722,26 +723,195 @@ $$ LANGUAGE plpgsql;
 
 --select mutual_funds_on_date(TO_DATE('30-MAR-20', 'DD-MON-YY') ,'mike');
 
---Task 4
-CREATE OR REPLACE FUNCTION search_funds(keyword1 varchar(30), keyword2 varchar(30) DEFAULT NULL)
-RETURNS TABLE (fund_name varchar(30))
-AS
-    $$
-        BEGIN
-            IF keyword2 IS NULL THEN
-                RETURN QUERY (
-                    SELECT name FROM mutual_fund WHERE description LIKE '%' || keyword1 ||'%'
-                );
-            ELSE
-            RETURN QUERY (
-                SELECT name FROM mutual_fund WHERE description LIKE '%' || keyword1 ||'%' || keyword2 || '%'
-                    OR description LIKE '%' || keyword2 ||'%' || keyword1 || '%'
-            );
-        END IF;
-        END;
-    $$ LANGUAGE plpgsql;
 
---SELECT search_funds('stock', 'dogecoin');
+
+
+CREATE OR REPLACE PROCEDURE buy_shares(log varchar(10), symb varchar(20), amount decimal(10, 2)) AS
+    $$
+    DECLARE
+        price decimal(10, 2);
+        bal decimal(10, 2);
+        n_shares integer;
+        cost decimal(10, 2);
+        buy_date date;
+    BEGIN
+        SELECT closing_price.price FROM closing_price
+            WHERE closing_price.symbol = symb
+            ORDER BY closing_price.p_date DESC
+            FETCH FIRST ROW ONLY INTO price;
+        SELECT balance FROM customer WHERE login = log INTO bal;
+        SELECT p_date FROM mutual_date FETCH FIRST ROW ONLY into buy_date;
+        SELECT FLOOR(amount/price) INTO n_shares;
+        SELECT price * n_shares INTO cost;
+        IF (n_shares > 0) THEN
+            UPDATE customer
+                SET balance = (balance - cost)
+                WHERE login = log;
+            INSERT INTO owns(login, symbol, shares)
+                VALUES (log, symb, n_shares)
+                ON CONFLICT ON CONSTRAINT OWNS_PK DO
+                UPDATE SET shares = owns.shares + n_shares
+                    WHERE owns.login = log AND owns.symbol = symb;
+             INSERT INTO trxlog VALUES (DEFAULT, log, symb, buy_date, 'buy', n_shares, price, (price * n_shares));
+            ELSE
+                RAISE EXCEPTION 'not enough money to buy shares';
+        end if;
+    end
+    $$ LANGUAGE plpgsql;
+--CALL buy_shares('mike', 'RE', 100.00);
+
+--Task 7:
+CREATE OR REPLACE FUNCTION sell_shares(login varchar(10), symbol varchar(20), number_of_shares int)
+    RETURNS BOOLEAN AS
+$$
+DECLARE
+    mutual_date_value date;
+    row_count         int;
+    symbol_price      decimal(10, 2);
+    customer_balance  decimal(10, 2);
+    customer_shares   int;
+BEGIN
+
+    --  Get the current date
+    SELECT p_date
+    INTO mutual_date_value
+    FROM MUTUAL_DATE
+    ORDER BY p_date DESC
+    LIMIT 1;
+
+    -- Check if customer exists
+    SELECT count(*)
+    INTO row_count
+    FROM CUSTOMER
+    WHERE CUSTOMER.login = sell_shares.login; -- The name of the procedure is used as a prefix (i.e., scope)
+    IF row_count = 0 THEN
+        RAISE EXCEPTION 'User % not found.', login;
+    END IF;
+
+    -- Check if the symbol exists
+    SELECT count(*)
+    INTO row_count
+    FROM MUTUAL_FUND
+    WHERE MUTUAL_FUND.symbol = sell_shares.symbol; -- The name of the procedure is used as a prefix (i.e., scope)
+    IF row_count = 0 THEN
+        RAISE EXCEPTION 'Symbol % not found.', symbol;
+    END IF;
+
+    -- get the customer's balance
+    SELECT balance
+    INTO customer_balance
+    FROM CUSTOMER
+    WHERE CUSTOMER.login = sell_shares.login;
+
+    -- get the number of shares the customer owns
+    SELECT shares
+    INTO customer_shares
+    FROM owns
+    WHERE owns.login = sell_shares.login AND owns.symbol = sell_shares.symbol;
+
+    -- Get the latest price for the desired symbol
+    SELECT CLOSING_PRICE.price
+    INTO symbol_price
+    FROM CLOSING_PRICE
+    WHERE CLOSING_PRICE.symbol = sell_shares.symbol
+    ORDER BY CLOSING_PRICE.p_date DESC
+    LIMIT 1;
+
+    -- no sufficient shares to sell
+    IF customer_shares < sell_shares.number_of_shares THEN
+        RETURN FALSE;
+    END IF;
+
+    -- sell  shares section ==
+
+    -- The transaction id will be generated automatically the sequence 'trx_sequence'
+    INSERT INTO TRXLOG(login, symbol, action, num_shares, price, amount, t_date)
+    VALUES (login, symbol, 'sell', number_of_shares, symbol_price, (symbol_price * number_of_shares),
+            mutual_date_value);
+    --balance updated automatically by trigger
+
+    --update OWNS
+    --delete entry if cust sells all shares
+    IF customer_shares == sell_shares.number_of_shares THEN
+        DELETE FROM OWNS
+        WHERE OWNS.symbol = sell_shares.symbol AND OWNS.login = sell_shares.login;
+    ELSE
+        --modify entry
+        UPDATE OWNS
+        SET OWNS.shares = OWNS.shares - number_of_shares
+        WHERE OWNS.symbol = sell_shares.symbol AND OWNS.login = sell_shares.login;
+    end if;
+
+
+    -- end sell shares section ==
+
+    -- shares are sold
+    RETURN TRUE;
+
+END;
+$$ LANGUAGE PLPGSQL;
+
+
+--Task 8
+                                                                                               
+CREATE OR REPLACE FUNCTION get_roi_top(l varchar(10), s varchar(10))
+returns int as
+$$
+    declare
+        subtracted int = 0;
+        current int = 0;
+    begin
+        select coalesce(sum(amount),0) into subtracted
+            from trxlog
+                where trxlog.login = l and trxlog.symbol = s and action = 'sell';
+        select coalesce((shares*getRecentPrice(s)),0) into current
+            from owns
+            where owns.symbol = s and owns.login = l;
+
+        return current+subtracted-get_roi_bottom(l,s);
+    end;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION get_roi_bottom(l varchar(10), s varchar(10))
+returns int as
+$$
+    declare
+        added int = 0;
+    begin
+        select coalesce(sum(amount),0) into added
+            from trxlog
+                where trxlog.login = l and trxlog.symbol = s and action = 'buy';
+
+
+        return added;
+    end;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION show_roi(l varchar(10))
+returns varchar(100) as
+$$
+    DECLARE
+    curs1 refcursor;
+    row record;
+    output varchar(100);
+    n varchar(20);
+    BEGIN
+        open curs1 for select * from owns where login = l;
+        output = '';
+        loop
+            fetch curs1 into row;
+            exit when not found;
+            select name into n
+            from mutual_fund
+                where symbol = row.symbol;
+            output = output || row.symbol || ', '|| n || ' = '|| ((1.0*get_roi_top(l, row.symbol)/get_roi_bottom(l, row.symbol))::float4)||' ';
+        end loop;
+        raise notice 'ddd %',output;
+        return output;
+    end;
+$$ LANGUAGE PLPGSQL;
+                                          
+                         
 
 
 --Task #10: Change allocation preference
@@ -843,4 +1013,3 @@ $$
 $$language plpgsql;
 
 select * from owns_with_price('mike')
-
